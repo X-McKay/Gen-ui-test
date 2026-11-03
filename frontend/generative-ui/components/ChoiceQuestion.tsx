@@ -1,6 +1,7 @@
 "use client";
 
 import { useGenerativeUIAccessibility } from "@copilotkit/react-core/v2/generative-ui";
+import { useEffect } from "react";
 
 import { NOT_SURE, useInterviewField } from "@/generative-ui/interviewForm";
 
@@ -27,6 +28,11 @@ export function ChoiceQuestion({ field, prompt, options, whyAsked, suggested, re
     required,
     validate: (candidate) => options.some((option) => option.value === candidate),
   });
+  useEffect(() => {
+    // A confident guess is pre-filled so the user only has to confirm it.
+    if (value === undefined && suggested !== undefined) setValue(suggested);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mount
+  }, []);
   const current = value === undefined && suggested ? suggested : value;
   const notSure = current === NOT_SURE;
   return (

@@ -107,7 +107,7 @@ export function SegmentedChoice(props: SegmentedProps | MultiSegmentedProps) {
       aria-label={ariaLabel}
       className={cn(
         "flex flex-wrap gap-2",
-        !isMultiple && options.length <= 4 && "sm:inline-flex sm:rounded-[var(--radius)] sm:bg-muted sm:p-1 sm:gap-1",
+        !isMultiple && options.length <= 4 && "sm:inline-flex sm:w-fit sm:rounded-[var(--radius)] sm:bg-muted sm:p-1 sm:gap-1",
       )}
     >
       {options.map((option) => {

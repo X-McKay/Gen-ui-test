@@ -31,6 +31,7 @@ export interface FindingsReviewProps {
 }
 
 function labelFor(item: FindingItem, value: unknown): string {
+  if (JSON.stringify(value) === JSON.stringify(item.value) && item.displayValue) return item.displayValue;
   if (value === NOT_SURE) return "Not sure";
   if (typeof value === "boolean") return value ? "Yes" : "No";
   const labels = new Map((item.options ?? []).map((option) => [option.value, option.label]));

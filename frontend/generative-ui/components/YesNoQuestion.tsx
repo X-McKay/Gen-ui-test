@@ -1,6 +1,7 @@
 "use client";
 
 import { useGenerativeUIAccessibility } from "@copilotkit/react-core/v2/generative-ui";
+import { useEffect } from "react";
 
 import { NOT_SURE, useInterviewField } from "@/generative-ui/interviewForm";
 
@@ -17,6 +18,11 @@ export interface YesNoQuestionProps {
 export function YesNoQuestion({ field, prompt, whyAsked, suggested, required = true }: YesNoQuestionProps) {
   const accessibility = useGenerativeUIAccessibility();
   const [value, setValue] = useInterviewField<boolean>(field, { required });
+  useEffect(() => {
+    // A confident guess is pre-filled so the user only has to confirm it.
+    if (value === undefined && suggested !== undefined) setValue(suggested === "yes");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mount
+  }, []);
   const current = value === undefined && suggested ? suggested === "yes" : value;
   const notSure = current === NOT_SURE;
   const selected = current === true ? "yes" : current === false ? "no" : undefined;

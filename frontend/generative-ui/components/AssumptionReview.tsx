@@ -32,6 +32,7 @@ export interface AssumptionReviewProps {
 }
 
 function labelFor(item: AssumptionItem, value: unknown): string {
+  if (JSON.stringify(value) === JSON.stringify(item.value) && item.displayValue) return item.displayValue;
   if (value === NOT_SURE) return "Not sure";
   if (typeof value === "boolean") return value ? "Yes" : "No";
   const labels = new Map((item.options ?? []).map((option) => [option.value, option.label]));
@@ -119,7 +120,7 @@ function Chip({ item }: { item: AssumptionItem }) {
       data-field={item.field}
       data-state={state}
     >
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2">
         <FieldProvenancePopover
           label={item.label}
           displayValue={labelFor(item, value)}
@@ -129,16 +130,18 @@ function Chip({ item }: { item: AssumptionItem }) {
         >
           <button
             type="button"
-            className="flex min-h-9 items-center gap-2 rounded-md px-1 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={`Provenance for ${item.label}`}
           >
-            <span className="text-muted-foreground">{item.label}</span>
-            <span className="font-medium text-foreground">{labelFor(item, value)}</span>
-            <ConfidenceDots confidence={item.confidence} />
-            <Info className="size-3.5 text-muted-foreground" aria-hidden="true" />
+            <span className="shrink-0 text-muted-foreground">{item.label}</span>
+            <span className="min-w-0 truncate font-medium text-foreground" title={labelFor(item, value)}>
+              {labelFor(item, value)}
+            </span>
+            <ConfidenceDots confidence={item.confidence} className="shrink-0" />
+            <Info className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
           </button>
         </FieldProvenancePopover>
-        <span className="ml-auto inline-flex items-center gap-1">
+        <span className="ml-auto inline-flex shrink-0 items-center gap-1">
           <Button
             type="button"
             size="icon"

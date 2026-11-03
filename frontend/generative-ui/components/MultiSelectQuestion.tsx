@@ -1,6 +1,7 @@
 "use client";
 
 import { useGenerativeUIAccessibility } from "@copilotkit/react-core/v2/generative-ui";
+import { useEffect } from "react";
 
 import { NOT_SURE, useInterviewField } from "@/generative-ui/interviewForm";
 
@@ -31,6 +32,11 @@ export function MultiSelectQuestion({
     required,
     validate: (candidate) => Array.isArray(candidate) && candidate.length >= minSelected,
   });
+  useEffect(() => {
+    // A confident guess is pre-filled so the user only has to confirm it.
+    if (value === undefined && suggested !== undefined && suggested.length > 0) setValue(suggested);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on mount
+  }, []);
   const current = value === undefined && suggested && suggested.length > 0 ? suggested : value;
   const notSure = current === NOT_SURE;
   const selected = Array.isArray(current) ? current : [];
