@@ -1,0 +1,948 @@
+{
+  "$defs": {
+    "AiSystem": {
+      "additionalProperties": false,
+      "properties": {
+        "uses_ai": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "model_types": {
+          "$ref": "#/$defs/FieldMeta_list_str__"
+        },
+        "model_source": {
+          "$ref": "#/$defs/FieldMeta_ModelSource_"
+        },
+        "model_providers": {
+          "$ref": "#/$defs/FieldMeta_list_str__"
+        },
+        "gpai_model_used": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "fine_tuned_or_trained": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "autonomy_level": {
+          "$ref": "#/$defs/FieldMeta_AutonomyLevel_"
+        },
+        "human_oversight": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        }
+      },
+      "title": "AiSystem",
+      "type": "object"
+    },
+    "Assessment": {
+      "additionalProperties": false,
+      "properties": {
+        "eu_ai_act": {
+          "$ref": "#/$defs/EuAiActAssessment"
+        },
+        "overall_risk_tier": {
+          "$ref": "#/$defs/RiskTier",
+          "default": "low"
+        },
+        "applicable_frameworks": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Applicable Frameworks",
+          "type": "array"
+        },
+        "obligations": {
+          "items": {
+            "$ref": "#/$defs/Obligation"
+          },
+          "title": "Obligations",
+          "type": "array"
+        },
+        "recommended_next_steps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Recommended Next Steps",
+          "type": "array"
+        },
+        "open_questions": {
+          "description": "Dotted paths of fields left 'unknown'",
+          "items": {
+            "type": "string"
+          },
+          "title": "Open Questions",
+          "type": "array"
+        }
+      },
+      "title": "Assessment",
+      "type": "object"
+    },
+    "AutonomyLevel": {
+      "enum": [
+        "assistive",
+        "recommends",
+        "decides"
+      ],
+      "title": "AutonomyLevel",
+      "type": "string"
+    },
+    "Data": {
+      "additionalProperties": false,
+      "properties": {
+        "processes_personal_data": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "pii_categories": {
+          "$ref": "#/$defs/FieldMeta_list_str__"
+        },
+        "special_category_data": {
+          "$ref": "#/$defs/FieldMeta_list_SpecialCategory__"
+        },
+        "biometric_identification": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "data_subjects": {
+          "$ref": "#/$defs/FieldMeta_list_DataSubject__"
+        },
+        "data_sources": {
+          "$ref": "#/$defs/FieldMeta_list_str__"
+        },
+        "trains_on_personal_data": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "retention_policy": {
+          "$ref": "#/$defs/FieldMeta_str_"
+        },
+        "cross_border_transfer": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        }
+      },
+      "title": "Data",
+      "type": "object"
+    },
+    "DataSubject": {
+      "enum": [
+        "employees",
+        "customers",
+        "public",
+        "minors"
+      ],
+      "title": "DataSubject",
+      "type": "string"
+    },
+    "Domain": {
+      "enum": [
+        "hr_employment",
+        "credit_insurance",
+        "education",
+        "law_enforcement",
+        "migration_border",
+        "justice_democratic",
+        "critical_infrastructure",
+        "medical_or_safety_component",
+        "essential_services",
+        "other"
+      ],
+      "title": "Domain",
+      "type": "string"
+    },
+    "EuAiActAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "classification": {
+          "$ref": "#/$defs/EuAiActClassification",
+          "default": "minimal"
+        },
+        "annex_iii_categories": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Annex Iii Categories",
+          "type": "array"
+        },
+        "rationale": {
+          "items": {
+            "$ref": "#/$defs/RationaleEntry"
+          },
+          "title": "Rationale",
+          "type": "array"
+        }
+      },
+      "title": "EuAiActAssessment",
+      "type": "object"
+    },
+    "EuAiActClassification": {
+      "enum": [
+        "prohibited",
+        "high_risk",
+        "limited_transparency",
+        "minimal"
+      ],
+      "title": "EuAiActClassification",
+      "type": "string"
+    },
+    "FieldMeta_AutonomyLevel_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AutonomyLevel"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[AutonomyLevel]",
+      "type": "object"
+    },
+    "FieldMeta_LifecycleStage_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LifecycleStage"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[LifecycleStage]",
+      "type": "object"
+    },
+    "FieldMeta_ModelSource_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ModelSource"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[ModelSource]",
+      "type": "object"
+    },
+    "FieldMeta_TargetUsers_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TargetUsers"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[TargetUsers]",
+      "type": "object"
+    },
+    "FieldMeta_bool_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[bool]",
+      "type": "object"
+    },
+    "FieldMeta_list_DataSubject__": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/DataSubject"
+              },
+              "type": "array"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[list[DataSubject]]",
+      "type": "object"
+    },
+    "FieldMeta_list_Domain__": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Domain"
+              },
+              "type": "array"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[list[Domain]]",
+      "type": "object"
+    },
+    "FieldMeta_list_SpecialCategory__": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/SpecialCategory"
+              },
+              "type": "array"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[list[SpecialCategory]]",
+      "type": "object"
+    },
+    "FieldMeta_list_str__": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[list[str]]",
+      "type": "object"
+    },
+    "FieldMeta_str_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[str]",
+      "type": "object"
+    },
+    "IntakeMode": {
+      "enum": [
+        "new",
+        "existing"
+      ],
+      "title": "IntakeMode",
+      "type": "string"
+    },
+    "IntakeStatus": {
+      "enum": [
+        "in_progress",
+        "completed",
+        "submitted",
+        "escalated"
+      ],
+      "title": "IntakeStatus",
+      "type": "string"
+    },
+    "LifecycleStage": {
+      "enum": [
+        "idea",
+        "poc",
+        "pilot",
+        "production"
+      ],
+      "title": "LifecycleStage",
+      "type": "string"
+    },
+    "Meta": {
+      "additionalProperties": false,
+      "properties": {
+        "intake_id": {
+          "title": "Intake Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "default": "1.0.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/IntakeMode",
+          "default": "new"
+        },
+        "status": {
+          "$ref": "#/$defs/IntakeStatus",
+          "default": "in_progress"
+        },
+        "repo_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repo Url"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "completed_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Completed At"
+        },
+        "submitted_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Submitted At"
+        },
+        "question_count": {
+          "default": 0,
+          "title": "Question Count",
+          "type": "integer"
+        },
+        "analysis_progress": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Analysis Progress"
+        }
+      },
+      "required": [
+        "intake_id"
+      ],
+      "title": "Meta",
+      "type": "object"
+    },
+    "ModelSource": {
+      "enum": [
+        "third_party_api",
+        "open_weights",
+        "in_house"
+      ],
+      "title": "ModelSource",
+      "type": "string"
+    },
+    "Obligation": {
+      "additionalProperties": false,
+      "properties": {
+        "framework": {
+          "title": "Framework",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "reference": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "enum": [
+                "provider",
+                "deployer",
+                "both"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        }
+      },
+      "required": [
+        "framework",
+        "text"
+      ],
+      "title": "Obligation",
+      "type": "object"
+    },
+    "Project": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/FieldMeta_str_"
+        },
+        "description": {
+          "$ref": "#/$defs/FieldMeta_str_"
+        },
+        "owner": {
+          "$ref": "#/$defs/FieldMeta_str_"
+        },
+        "team": {
+          "$ref": "#/$defs/FieldMeta_str_"
+        },
+        "business_unit": {
+          "$ref": "#/$defs/FieldMeta_str_"
+        },
+        "lifecycle_stage": {
+          "$ref": "#/$defs/FieldMeta_LifecycleStage_"
+        },
+        "target_users": {
+          "$ref": "#/$defs/FieldMeta_TargetUsers_"
+        },
+        "deployment_regions": {
+          "$ref": "#/$defs/FieldMeta_list_str__"
+        }
+      },
+      "title": "Project",
+      "type": "object"
+    },
+    "RationaleEntry": {
+      "additionalProperties": false,
+      "description": "Why a classification was reached, linked to the answer that drove it.",
+      "properties": {
+        "field": {
+          "description": "Dotted path of the field that triggered the rule",
+          "title": "Field",
+          "type": "string"
+        },
+        "value": {
+          "description": "The value that triggered the rule",
+          "title": "Value"
+        },
+        "article": {
+          "description": "Citation, e.g. 'EU AI Act Art. 6(2), Annex III 4'",
+          "title": "Article",
+          "type": "string"
+        },
+        "text": {
+          "description": "Plain-language explanation",
+          "title": "Text",
+          "type": "string"
+        },
+        "effect": {
+          "description": "Classification effect, e.g. 'high_risk'",
+          "title": "Effect",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "article",
+        "text",
+        "effect"
+      ],
+      "title": "RationaleEntry",
+      "type": "object"
+    },
+    "RiskTier": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "RiskTier",
+      "type": "string"
+    },
+    "SpecialCategory": {
+      "enum": [
+        "health",
+        "biometric",
+        "ethnicity",
+        "political",
+        "religious",
+        "sexual_orientation",
+        "criminal"
+      ],
+      "title": "SpecialCategory",
+      "type": "string"
+    },
+    "TargetUsers": {
+      "enum": [
+        "internal",
+        "external",
+        "public"
+      ],
+      "title": "TargetUsers",
+      "type": "string"
+    },
+    "UseCase": {
+      "additionalProperties": false,
+      "properties": {
+        "domains": {
+          "$ref": "#/$defs/FieldMeta_list_Domain__"
+        },
+        "purpose": {
+          "$ref": "#/$defs/FieldMeta_str_"
+        },
+        "affects_legal_or_significant_effects": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "interacts_directly_with_people": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "generates_synthetic_content": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "emotion_recognition": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "social_scoring": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "remote_biometric_id_public_spaces": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "manipulative_or_subliminal": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "untargeted_facial_scraping": {
+          "$ref": "#/$defs/FieldMeta_bool_"
+        }
+      },
+      "title": "UseCase",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "$ref": "#/$defs/Meta"
+    },
+    "project": {
+      "$ref": "#/$defs/Project"
+    },
+    "ai_system": {
+      "$ref": "#/$defs/AiSystem"
+    },
+    "data": {
+      "$ref": "#/$defs/Data"
+    },
+    "use_case": {
+      "$ref": "#/$defs/UseCase"
+    },
+    "assessment": {
+      "$ref": "#/$defs/Assessment"
+    }
+  },
+  "required": [
+    "meta"
+  ],
+  "title": "IntakeRecord",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://intake.local/schema/intake.schema.json"
+}
