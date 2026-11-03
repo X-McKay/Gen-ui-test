@@ -45,11 +45,18 @@ function ExistingIntake() {
   const intakeIdParam = params.get("id");
   const [phase, setPhase] = useState<Phase>(intakeIdParam ? { kind: "loading" } : { kind: "connect", error: null, busy: false });
   const sourceRef = useRef<EventSource | null>(null);
+  const phaseRef = useRef(phase);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
 
   useEffect(() => () => sourceRef.current?.close(), []);
 
   useEffect(() => {
     if (!intakeIdParam) return;
+    // The URL is updated after an analysis finishes; the interview is already mounted then.
+    const current = phaseRef.current;
+    if (current.kind === "interview" && current.intakeId === intakeIdParam) return;
     let cancelled = false;
     apiClient
       .getIntake(intakeIdParam)

@@ -28,8 +28,14 @@ def _pending_findings(record: IntakeRecord) -> list[Finding]:
         from app.repo_analysis.findings_store import load_findings
     except ImportError:  # pragma: no cover - repo analysis not installed yet
         return []
-    findings = [Finding.model_validate(item) for item in load_findings(record.meta.intake_id)]
     pending: list[Finding] = []
+    findings: list[Finding] = []
+    for item in load_findings(record.meta.intake_id):
+        payload = item.model_dump() if hasattr(item, "model_dump") else item
+        try:
+            findings.append(Finding.model_validate(payload))
+        except ValueError:
+            continue
     for finding in findings:
         try:
             field = record.get_field(finding.field)

@@ -87,6 +87,10 @@ export function IntakeSurface({ intakeId, initialMessage, initialStatus, childre
         setRunning(false);
         setError(cause instanceof Error ? cause.message : "The agent could not continue.");
       },
+      onRunErrorEvent: ({ event }) => {
+        setRunning(false);
+        setError(event.message || "The agent reported an error.");
+      },
     });
     // Read the current state once the subscription is in place (outside the render pass).
     const initial = window.setTimeout(() => setState(readAgentState(agent.state)), 0);
