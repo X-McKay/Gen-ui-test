@@ -20,7 +20,7 @@ from app.intake.gap_analysis import (
     section_progress,
     suggested_value,
 )
-from app.intake.question_bank import QUESTIONS_BY_FIELD, SECTION_LABELS, QuestionSpec, Section
+from app.intake.question_bank import SECTION_LABELS, QuestionSpec, Section
 from app.intake.schema import EuAiActClassification, IntakeRecord
 
 TARGET_ID = "interview"
@@ -203,18 +203,6 @@ def build_step(
 # --- A2UI operations ----------------------------------------------------------------------
 
 
-def _control_for(field: str) -> str:
-    spec = QUESTIONS_BY_FIELD.get(field)
-    return spec.control if spec else "text"
-
-
-def _options_for(field: str) -> list[dict[str, str]]:
-    spec = QUESTIONS_BY_FIELD.get(field)
-    if spec is None:
-        return []
-    return [{"value": option.value, "label": option.label} for option in spec.options]
-
-
 def _operation(kind: str, body: dict[str, Any]) -> dict[str, Any]:
     return {"version": "1.0", kind: body}
 
@@ -306,8 +294,6 @@ def build_operations(step: Step) -> list[dict[str, Any]]:
                             "confidence": round(finding.confidence, 2),
                             "evidencePath": finding.evidence_path,
                             "snippet": finding.snippet,
-                            "control": _control_for(finding.field),
-                            "options": _options_for(finding.field),
                         }
                         for finding in step.findings
                     ],
@@ -329,11 +315,6 @@ def build_operations(step: Step) -> list[dict[str, Any]]:
                             "confidence": round(chip.confidence, 2),
                             "source": chip.source,
                             "mustConfirm": chip.must_confirm,
-                            "control": chip.control,
-                            "options": [
-                                {"value": option.value, "label": option.label}
-                                for option in chip.options
-                            ],
                         }
                         for chip in step.assumptions
                     ],

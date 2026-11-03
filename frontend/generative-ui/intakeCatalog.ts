@@ -24,7 +24,6 @@ const option = z.object({
   description: z.string().max(160).optional(),
 });
 
-const control = z.enum(["choice", "multi", "yes_no", "text"]);
 const fieldPath = z.string().regex(/^(project|ai_system|data|use_case)\.[a-z_]+$/, "a dotted field path");
 const questionPrompt = z.string().min(4).max(160);
 
@@ -67,8 +66,6 @@ export const intakeUI = createGenerativeUI({
               confidence: z.number().min(0).max(1),
               source: z.string().max(200),
               mustConfirm: z.boolean().optional(),
-              control: control.optional(),
-              options: z.array(option).optional(),
             }),
           )
           .max(40),
@@ -145,8 +142,6 @@ export const intakeUI = createGenerativeUI({
               confidence: z.number().min(0).max(1),
               evidencePath: z.string().max(300),
               snippet: z.string().max(400),
-              control: control.optional(),
-              options: z.array(option).optional(),
             }),
           )
           .max(60),

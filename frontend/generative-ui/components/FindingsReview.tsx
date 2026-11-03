@@ -7,9 +7,18 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NOT_SURE, useInterviewForm } from "@/generative-ui/interviewForm";
+import { FIELD_CONTROLS, FIELD_OPTIONS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
 import type { ChoiceOption } from "./ChoiceQuestion";
+
+function controlFor(field: string): "choice" | "multi" | "yes_no" | "text" {
+  return FIELD_CONTROLS[field] ?? "text";
+}
+
+function optionsFor(field: string): ChoiceOption[] {
+  return (FIELD_OPTIONS[field] ?? []).map((option) => ({ value: option.value, label: option.label }));
+}
 import { ConfidenceDots } from "./ConfidenceDots";
 import { SegmentedChoice } from "./QuestionShell";
 
@@ -21,8 +30,6 @@ export interface FindingItem {
   confidence: number;
   evidencePath: string;
   snippet: string;
-  control?: "choice" | "multi" | "yes_no" | "text";
-  options?: ChoiceOption[];
 }
 
 export interface FindingsReviewProps {
@@ -34,7 +41,7 @@ function labelFor(item: FindingItem, value: unknown): string {
   if (JSON.stringify(value) === JSON.stringify(item.value) && item.displayValue) return item.displayValue;
   if (value === NOT_SURE) return "Not sure";
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  const labels = new Map((item.options ?? []).map((option) => [option.value, option.label]));
+  const labels = new Map(optionsFor(item.field).map((option) => [option.value, option.label]));
   if (Array.isArray(value)) return value.length ? value.map((v) => labels.get(String(v)) ?? String(v)).join(", ") : "None";
   if (value === undefined || value === null) return "—";
   return labels.get(String(value)) ?? String(value);
@@ -50,7 +57,7 @@ function Row({ item }: { item: FindingItem }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- register once per row
   }, [item.field]);
   const setValue = (next: unknown) => form?.setAssumption(item.field, next);
-  const control = item.control ?? "text";
+  const control = controlFor(item.field);
   return (
     <tr
       data-testid="finding-row"
@@ -78,7 +85,7 @@ function Row({ item }: { item: FindingItem }) {
             ) : control === "choice" ? (
               <SegmentedChoice
                 ariaLabel={`Correct ${item.label}`}
-                options={[...(item.options ?? []), { value: NOT_SURE, label: "Not sure" }]}
+                options={[...optionsFor(item.field), { value: NOT_SURE, label: "Not sure" }]}
                 value={typeof value === "string" ? value : undefined}
                 onChange={(next) => setValue(next)}
               />
@@ -86,7 +93,7 @@ function Row({ item }: { item: FindingItem }) {
               <SegmentedChoice
                 multiple
                 ariaLabel={`Correct ${item.label}`}
-                options={item.options ?? []}
+                options={optionsFor(item.field)}
                 value={Array.isArray(value) ? value.map(String) : []}
                 onChange={(next) => setValue(next)}
               />

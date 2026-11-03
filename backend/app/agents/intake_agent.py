@@ -6,10 +6,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from ag_ui.core import RunAgentInput
 from ag_ui_adk import ADKAgent, AGUIToolset
 from google.adk.agents import LlmAgent
 from google.adk.agents.readonly_context import ReadonlyContext
+from google.adk.agents.run_config import RunConfig, StreamingMode  # type: ignore[attr-defined]
 
+from app.agents.render_repair import repair_render_ui_response
 from app.agents.tools import (
     extract_intake_facts,
     finalize_intake,
@@ -81,6 +84,8 @@ def create_llm_agent(settings: Settings | None = None) -> LlmAgent:
         description="Runs the AI governance intake interview.",
         model=create_agent_model(settings),
         instruction=build_instruction,
+        # Restores the server's render plan when the model mangles it while copying.
+        after_model_callback=repair_render_ui_response,
         tools=[
             extract_intake_facts,
             update_intake_fields,
@@ -92,6 +97,22 @@ def create_llm_agent(settings: Settings | None = None) -> LlmAgent:
     )
 
 
+def run_config_for(run_input: RunAgentInput) -> RunConfig:
+    """Whole model responses, not token streams: the repair callback must see the complete
+    ``render_ui`` call before the AG-UI adapter forwards it to the browser. The UI shows a
+    status line meanwhile, and agent text is at most two sentences."""
+    custom_metadata: dict[str, Any] = {}
+    if run_input.context:
+        custom_metadata["ag_ui_context"] = [
+            {"description": entry.description, "value": entry.value} for entry in run_input.context
+        ]
+    return RunConfig(
+        streaming_mode=StreamingMode.NONE,
+        save_input_blobs_as_artifacts=False,
+        custom_metadata=custom_metadata or None,
+    )
+
+
 def create_adk_agent(settings: Settings | None = None) -> ADKAgent:
     settings = settings or get_settings()
     return ADKAgent(
@@ -99,4 +120,5 @@ def create_adk_agent(settings: Settings | None = None) -> ADKAgent:
         app_name=APP_NAME,
         user_id="intake-user",
         use_in_memory_services=True,
+        run_config_factory=run_config_for,
     )

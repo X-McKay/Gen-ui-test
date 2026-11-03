@@ -8,9 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FieldProvenancePopover } from "@/components/review/FieldProvenancePopover";
 import { NOT_SURE, useInterviewForm } from "@/generative-ui/interviewForm";
+import { FIELD_CONTROLS, FIELD_OPTIONS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
 import type { ChoiceOption } from "./ChoiceQuestion";
+
+function controlFor(field: string): "choice" | "multi" | "yes_no" | "text" {
+  return FIELD_CONTROLS[field] ?? "text";
+}
+
+function optionsFor(field: string): ChoiceOption[] {
+  return (FIELD_OPTIONS[field] ?? []).map((option) => ({ value: option.value, label: option.label }));
+}
 import { ConfidenceDots } from "./ConfidenceDots";
 import { SegmentedChoice } from "./QuestionShell";
 
@@ -22,8 +31,6 @@ export interface AssumptionItem {
   confidence: number;
   source: string;
   mustConfirm?: boolean;
-  control?: "choice" | "multi" | "yes_no" | "text";
-  options?: ChoiceOption[];
 }
 
 export interface AssumptionReviewProps {
@@ -35,7 +42,7 @@ function labelFor(item: AssumptionItem, value: unknown): string {
   if (JSON.stringify(value) === JSON.stringify(item.value) && item.displayValue) return item.displayValue;
   if (value === NOT_SURE) return "Not sure";
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  const labels = new Map((item.options ?? []).map((option) => [option.value, option.label]));
+  const labels = new Map(optionsFor(item.field).map((option) => [option.value, option.label]));
   if (Array.isArray(value)) return value.length ? value.map((v) => labels.get(String(v)) ?? String(v)).join(", ") : "None";
   if (value === undefined || value === null) return "—";
   return labels.get(String(value)) ?? String(value);
@@ -62,7 +69,7 @@ function Chip({ item }: { item: AssumptionItem }) {
 
   const editor = useMemo(() => {
     if (!editing) return null;
-    const control = item.control ?? "text";
+    const control = controlFor(item.field);
     if (control === "yes_no") {
       return (
         <SegmentedChoice
@@ -81,7 +88,7 @@ function Chip({ item }: { item: AssumptionItem }) {
       return (
         <SegmentedChoice
           ariaLabel={`Edit ${item.label}`}
-          options={[...(item.options ?? []), { value: NOT_SURE, label: "Not sure" }]}
+          options={[...optionsFor(item.field), { value: NOT_SURE, label: "Not sure" }]}
           value={typeof value === "string" ? value : undefined}
           onChange={(next) => setValue(next)}
         />
@@ -92,7 +99,7 @@ function Chip({ item }: { item: AssumptionItem }) {
         <SegmentedChoice
           multiple
           ariaLabel={`Edit ${item.label}`}
-          options={item.options ?? []}
+          options={optionsFor(item.field)}
           value={Array.isArray(value) ? value.map(String) : []}
           onChange={(next) => setValue(next)}
         />
