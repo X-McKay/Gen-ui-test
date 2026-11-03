@@ -1,0 +1,61 @@
+# AI Governance Intake — local container stack.
+#
+#   cp .env.example .env          # inference endpoint, model id, allowlists
+#   docker compose up --build     # frontend http://localhost:3000, backend http://localhost:8000
+#
+# The backend reads .env; DATABASE_URL and FRONTEND_ORIGIN are pinned here so the sqlite file
+# lands on the named volume and CORS matches the published frontend port. Set MOCK_MODEL=1 in
+# .env to run the stack without any network access.
+
+name: intake
+
+services:
+  backend:
+    build:
+      context: ./backend
+    image: intake-backend
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: sqlite:////data/intake.db
+      FRONTEND_ORIGIN: http://localhost:3000
+    volumes:
+      - intake-data:/data
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4).status == 200 else 1)"
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    image: intake-frontend
+    environment:
+      # Read at request time by the /api/backend proxy and the CopilotKit runtime route.
+      BACKEND_URL: http://backend:8000
+      NEXT_PUBLIC_ENABLE_INSPECTOR: "0"
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1:3000/"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  intake-data:

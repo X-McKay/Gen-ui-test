@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+htmlcov/
+.coverage
+*.db
+.env
+# Tests are not shipped, except the fixture repositories used by MOCK_MODEL=1.
+tests/*
+!tests/fixtures/
+Dockerfile
+.dockerignore

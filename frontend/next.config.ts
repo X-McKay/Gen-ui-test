@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 
-const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8000";
 const isProduction = process.env.NODE_ENV === "production";
 
 // Outside production the CopilotKit Inspector loads its fonts and release notes from
@@ -24,9 +23,6 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   turbopack: { rules: { "*.css": { loaders: ["@tailwindcss/turbopack"], as: "*.css" } } },
-  async rewrites() {
-    return [{ source: "/api/backend/:path*", destination: `${backendUrl}/:path*` }];
-  },
   async headers() {
     return [
       {
