@@ -159,11 +159,9 @@ class ScriptedLlm(BaseLlm):
         lowered = text.lower()
         if "acknowledged the escalation" in lowered:
             return _text_response("Contact the AI governance team before any further work.")
-        if (
-            lowered.startswith("resume")
-            or "repository findings" in lowered
-            or "review the findings" in lowered
-        ):
+        if lowered.startswith("resume"):
+            return _call_response("get_next_questions", {"resume": True})
+        if "repository findings" in lowered or "review the findings" in lowered:
             return _call_response("get_next_questions", {})
         return _call_response("extract_intake_facts", {"text": text})
 

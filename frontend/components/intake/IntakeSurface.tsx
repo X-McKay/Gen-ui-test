@@ -44,6 +44,40 @@ function SurfaceSkeleton() {
   );
 }
 
+/** The result the runtime writes for a `render_ui` call. */
+interface RenderResult {
+  status?: string;
+  applied?: number;
+  rejected?: { index: number; reason: string }[];
+}
+
+/**
+ * True when the last thing the agent did was a `render_ui` call that the runtime rejected
+ * (nothing valid reached the page). The tool result already carries the reasons, so running
+ * the agent again lets it self-correct.
+ */
+function lastRenderWasRejected(messages: readonly { role: string; content?: unknown; toolCallId?: string; toolCalls?: { id: string; function: { name: string } }[] }[]): boolean {
+  const renderCallIds = new Set<string>();
+  for (const message of messages) {
+    if (message.role === "assistant") {
+      for (const call of message.toolCalls ?? []) {
+        if (call.function.name === "render_ui") renderCallIds.add(call.id);
+      }
+    }
+  }
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "tool" || !last.toolCallId || !renderCallIds.has(last.toolCallId)) return false;
+  if (typeof last.content !== "string") return false;
+  try {
+    const result = JSON.parse(last.content) as RenderResult;
+    return result.status === "error" || ((result.rejected?.length ?? 0) > 0 && (result.applied ?? 0) === 0);
+  } catch {
+    return false;
+  }
+}
+
+const MAX_SELF_CORRECTIONS = 2;
+
 export interface IntakeSurfaceProps {
   intakeId: string;
   /** The first message to send when the thread has no history yet. */
@@ -73,6 +107,7 @@ export function IntakeSurface({ intakeId, initialMessage, initialStatus, childre
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
+  const correctionsRef = useRef(0);
 
   useEffect(() => {
     if (!isReady) return;
@@ -82,7 +117,17 @@ export function IntakeSurface({ intakeId, initialMessage, initialStatus, childre
         setRunning(true);
         setError(null);
       },
-      onRunFinalized: () => setRunning(false),
+      onRunFinalized: () => {
+        setRunning(false);
+        if (lastRenderWasRejected(agent.messages) && correctionsRef.current < MAX_SELF_CORRECTIONS) {
+          correctionsRef.current += 1;
+          window.setTimeout(() => {
+            void copilotkit.runAgent({ agent }).catch(() => undefined);
+          }, 0);
+        } else if (!lastRenderWasRejected(agent.messages)) {
+          correctionsRef.current = 0;
+        }
+      },
       onRunFailed: ({ error: cause }) => {
         setRunning(false);
         setError(cause instanceof Error ? cause.message : "The agent could not continue.");
@@ -98,7 +143,7 @@ export function IntakeSurface({ intakeId, initialMessage, initialStatus, childre
       window.clearTimeout(initial);
       subscription.unsubscribe();
     };
-  }, [agent, isReady]);
+  }, [agent, isReady, copilotkit]);
 
   const start = useCallback(async () => {
     if (!isReady || startedRef.current) return;

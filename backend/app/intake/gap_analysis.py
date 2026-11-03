@@ -176,12 +176,12 @@ def section_progress(record: IntakeRecord, active: Section | None = None) -> lis
         done = 0
         for spec in specs:
             status = field_status(record, spec)
-            if status in {
-                FieldStatus.CONFIRMED,
-                FieldStatus.INFERRED_OK,
-                FieldStatus.UNKNOWN,
-                FieldStatus.SKIPPED,
-            }:
+            if status is FieldStatus.SKIPPED:
+                # Skipped behind an answered gate counts as done; behind an unanswered gate
+                # it is still pending.
+                gate_answered = spec.gate is not None and record.get_field(spec.gate.field).is_set
+                done += 1 if gate_answered else 0
+            elif status in {FieldStatus.CONFIRMED, FieldStatus.INFERRED_OK, FieldStatus.UNKNOWN}:
                 done += 1
         rows.append(
             SectionProgress(

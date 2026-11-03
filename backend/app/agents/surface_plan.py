@@ -145,7 +145,7 @@ def build_step(
 ) -> Step:
     """Decide the next step from the record. Pure apart from reading the record."""
     surface_id = f"step-{step_number}"
-    if record.assessment.eu_ai_act.classification == EuAiActClassification.PROHIBITED:
+    if confirmed_prohibited(record):
         reasons = [
             entry.text
             for entry in record.assessment.eu_ai_act.rationale
