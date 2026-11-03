@@ -1047,6 +1047,9 @@
   },
   "additionalProperties": false,
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "meta": {
       "$ref": "#/$defs/Meta"
     },

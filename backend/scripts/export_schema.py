@@ -30,6 +30,8 @@ def render() -> str:
     schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
     schema["$id"] = "https://intake.local/schema/intake.schema.json"
     schema["title"] = "IntakeRecord"
+    # Exports carry a "$schema" pointer; allow it without requiring it.
+    schema["properties"] = {"$schema": {"type": "string"}, **schema["properties"]}
     return json.dumps(schema, indent=2, sort_keys=False) + "\n"
 
 

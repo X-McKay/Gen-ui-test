@@ -8,12 +8,14 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.intake.question_bank import (
     CONDITIONAL_MUST_CONFIRM,
     QUESTION_BANK,
     SECTION_LABELS,
+    Control,
+    Option,
     QuestionSpec,
     Section,
     display_value,
@@ -47,6 +49,8 @@ class Assumption(BaseModel):
     source: str
     must_confirm: bool = False
     section: Section
+    control: Control = "text"
+    options: list[Option] = Field(default_factory=list)
 
 
 class SectionProgress(BaseModel):
@@ -100,6 +104,10 @@ def assumptions(record: IntakeRecord) -> list[Assumption]:
     """Inferred, unconfirmed values worth showing as chips (any confidence for must-confirm)."""
     chips: list[Assumption] = []
     for spec in _ordered_specs():
+        # Optional details stay as silent inferences (visible on the review page); chips are
+        # for values that gate the interview or change the classification.
+        if not spec.required and not spec.must_confirm:
+            continue
         status = field_status(record, spec)
         if status not in {FieldStatus.INFERRED_OK, FieldStatus.NEEDS_CONFIRMATION}:
             continue
@@ -114,6 +122,8 @@ def assumptions(record: IntakeRecord) -> list[Assumption]:
                 source=field.source,
                 must_confirm=status is FieldStatus.NEEDS_CONFIRMATION,
                 section=spec.section,
+                control=spec.control,
+                options=spec.options,
             )
         )
     return chips
@@ -139,7 +149,8 @@ def next_questions(
     record: IntakeRecord, limit: int = MAX_QUESTIONS_PER_SURFACE
 ) -> list[QuestionSpec]:
     """At most ``limit`` related questions: all open gates first, else one section at a time."""
-    gaps = open_gaps(record)
+    shown_as_chips = {chip.field for chip in assumptions(record)}
+    gaps = [spec for spec in open_gaps(record) if spec.field not in shown_as_chips]
     if not gaps:
         return []
     gates = [spec for spec in gaps if spec.is_gate]

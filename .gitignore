@@ -27,3 +27,6 @@ frontend/playwright/.cache/
 # OS / editors
 .DS_Store
 *.log
+
+# Playwright MCP artefacts
+.playwright-mcp/

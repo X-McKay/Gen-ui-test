@@ -33,6 +33,48 @@ class ExtractedField(BaseModel):
     evidence: str | None = Field(default=None, description="Short quote that supports the value")
 
 
+# Guidance for fields the model tends to get wrong. Keeps the legal meaning tight.
+FIELD_HINTS: dict[str, str] = {
+    "use_case.social_scoring": (
+        "Only true for scoring people's trustworthiness or social behaviour across unrelated "
+        "contexts leading to detrimental treatment (EU AI Act Art. 5(1)(c)). A job-fit, credit "
+        "or quality score for one stated purpose is NOT social scoring: record false."
+    ),
+    "use_case.emotion_recognition": "True only when the system infers emotions or intentions.",
+    "use_case.manipulative_or_subliminal": "True only for deliberate deception or subliminal cues.",
+    "use_case.affects_legal_or_significant_effects": (
+        "True when outputs influence hiring, credit, access to services, legal status or "
+        "similar decisions about a person, even with a human in the loop."
+    ),
+    "ai_system.uses_ai": "True for any ML or generative model, including LLM APIs.",
+    "ai_system.gpai_model_used": "True whenever an LLM or other foundation model is used.",
+    "ai_system.autonomy_level": (
+        "assistive = drafts for a person; recommends = suggests, a person decides; "
+        "decides = acts without review."
+    ),
+    "ai_system.human_oversight": "True when a person reviews or can override outputs.",
+    "data.processes_personal_data": "CVs, customer records, employee data and names count.",
+    "data.data_subjects": "Candidates and staff are employees; students may be minors.",
+    "project.target_users": "internal = staff only; external = partners or customers; public = anyone.",  # noqa: E501
+    "project.lifecycle_stage": "pilot and production are stated; otherwise leave it out.",
+}
+
+GATE_FIELDS = (
+    "ai_system.uses_ai",
+    "data.processes_personal_data",
+    "use_case.domains",
+    "use_case.affects_legal_or_significant_effects",
+    "project.target_users",
+    "ai_system.gpai_model_used",
+    "ai_system.autonomy_level",
+    "data.data_subjects",
+    "data.special_category_data",
+    "data.biometric_identification",
+    "use_case.emotion_recognition",
+    "use_case.social_scoring",
+)
+
+
 def _value_schema(spec: QuestionSpec) -> dict[str, Any]:
     if spec.control == "yes_no":
         return {"type": "boolean"}
@@ -50,9 +92,10 @@ def extraction_tool_schema() -> dict[str, Any]:
     """OpenAI-style tool definition with one property per askable field."""
     properties: dict[str, Any] = {}
     for spec in QUESTION_BANK:
+        hint = FIELD_HINTS.get(spec.field)
         properties[spec.field.replace(".", "__")] = {
             "type": "object",
-            "description": spec.prompt,
+            "description": f"{spec.prompt} {hint}" if hint else spec.prompt,
             "properties": {
                 "value": _value_schema(spec),
                 "confidence": {
@@ -85,8 +128,13 @@ def extraction_tool_schema() -> dict[str, Any]:
 
 SYSTEM_PROMPT = (
     "You extract facts for an AI governance intake. Read the project description and call "
-    f"{EXTRACTION_TOOL_NAME} exactly once with every field the text supports. Never invent "
-    "details; use confidence below 0.8 for guesses. Do not reply with prose."
+    f"{EXTRACTION_TOOL_NAME} exactly once with every field the text supports. Always try to "
+    "fill these gate fields first, because they decide the classification: "
+    + ", ".join(GATE_FIELDS)
+    + ". When a description of an ordinary business tool clearly implies that a sensitive "
+    "practice is absent (biometrics, emotion recognition, social scoring, manipulation), "
+    "record it as false with confidence 0.85. Never invent details; use confidence below 0.8 "
+    "for guesses. Do not reply with prose."
 )
 
 
@@ -131,7 +179,9 @@ async def extract_fields(text: str, *, context: str | None = None) -> list[Extra
         tools=[extraction_tool_schema()],
         tool_choice={"type": "function", "function": {"name": EXTRACTION_TOOL_NAME}},
         temperature=0,
-        max_tokens=4000,
+        max_tokens=6000,
+        # Extraction needs no chain of thought; vLLM/Qwen honour this and other servers drop it.
+        extra_body={"chat_template_kwargs": {"enable_thinking": False}},
         **completion_kwargs(settings),
     )
     message = response.choices[0].message

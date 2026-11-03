@@ -11,7 +11,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "gen:types": "json2ts -i ../schema/intake.schema.json -o lib/intakeTypes.ts --bannerComment \"/* eslint-disable */\\n/** Generated from schema/intake.schema.json by pnpm gen:types. Do not edit. */\" --no-additionalProperties",
+    "gen:types": "json2ts -i ../schema/intake.schema.json -o lib/intakeTypes.ts --bannerComment \"/* eslint-disable */ /* Generated from schema/intake.schema.json by pnpm gen:types. Do not edit. */\" --no-additionalProperties",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui"
   },

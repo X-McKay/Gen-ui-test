@@ -1,4 +1,4 @@
-/* eslint-disable */
+/* eslint-disable */ /* Generated from schema/intake.schema.json by pnpm gen:types. Do not edit. */
 
 export type IntakeId = string;
 export type SchemaVersion = string;
@@ -102,141 +102,142 @@ export type RecommendedNextSteps = string[];
 export type OpenQuestions = string[];
 
 export interface IntakeRecord {
+  $schema?: string;
   meta: Meta;
-  project?: Project;
-  ai_system?: AiSystem;
-  data?: Data;
-  use_case?: UseCase;
-  assessment?: Assessment;
+  project: Project;
+  ai_system: AiSystem;
+  data: Data;
+  use_case: UseCase;
+  assessment: Assessment;
 }
 export interface Meta {
   intake_id: IntakeId;
-  schema_version?: SchemaVersion;
-  mode?: IntakeMode;
-  status?: IntakeStatus;
-  repo_url?: RepoUrl;
-  created_at?: CreatedAt;
-  updated_at?: UpdatedAt;
-  completed_at?: CompletedAt;
-  submitted_at?: SubmittedAt;
-  question_count?: QuestionCount;
-  analysis_progress?: AnalysisProgress;
+  schema_version: SchemaVersion;
+  mode: IntakeMode;
+  status: IntakeStatus;
+  repo_url: RepoUrl;
+  created_at: CreatedAt;
+  updated_at: UpdatedAt;
+  completed_at: CompletedAt;
+  submitted_at: SubmittedAt;
+  question_count: QuestionCount;
+  analysis_progress: AnalysisProgress;
 }
 export interface Project {
-  name?: FieldMetaStr;
-  description?: FieldMetaStr;
-  owner?: FieldMetaStr;
-  team?: FieldMetaStr;
-  business_unit?: FieldMetaStr;
-  lifecycle_stage?: FieldMetaLifecycleStage;
-  target_users?: FieldMetaTargetUsers;
-  deployment_regions?: FieldMetaListStr;
+  name: FieldMetaStr;
+  description: FieldMetaStr;
+  owner: FieldMetaStr;
+  team: FieldMetaStr;
+  business_unit: FieldMetaStr;
+  lifecycle_stage: FieldMetaLifecycleStage;
+  target_users: FieldMetaTargetUsers;
+  deployment_regions: FieldMetaListStr;
 }
 export interface FieldMetaStr {
-  value?: Value;
-  confidence?: Confidence;
-  source?: Source;
-  confirmed?: Confirmed;
+  value: Value;
+  confidence: Confidence;
+  source: Source;
+  confirmed: Confirmed;
 }
 export interface FieldMetaLifecycleStage {
-  value?: Value1;
-  confidence?: Confidence1;
-  source?: Source1;
-  confirmed?: Confirmed1;
+  value: Value1;
+  confidence: Confidence1;
+  source: Source1;
+  confirmed: Confirmed1;
 }
 export interface FieldMetaTargetUsers {
-  value?: Value2;
-  confidence?: Confidence2;
-  source?: Source2;
-  confirmed?: Confirmed2;
+  value: Value2;
+  confidence: Confidence2;
+  source: Source2;
+  confirmed: Confirmed2;
 }
 export interface FieldMetaListStr {
-  value?: Value3;
-  confidence?: Confidence3;
-  source?: Source3;
-  confirmed?: Confirmed3;
+  value: Value3;
+  confidence: Confidence3;
+  source: Source3;
+  confirmed: Confirmed3;
 }
 export interface AiSystem {
-  uses_ai?: FieldMetaBool;
-  model_types?: FieldMetaListStr;
-  model_source?: FieldMetaModelSource;
-  model_providers?: FieldMetaListStr;
-  gpai_model_used?: FieldMetaBool;
-  fine_tuned_or_trained?: FieldMetaBool;
-  autonomy_level?: FieldMetaAutonomyLevel;
-  human_oversight?: FieldMetaBool;
+  uses_ai: FieldMetaBool;
+  model_types: FieldMetaListStr;
+  model_source: FieldMetaModelSource;
+  model_providers: FieldMetaListStr;
+  gpai_model_used: FieldMetaBool;
+  fine_tuned_or_trained: FieldMetaBool;
+  autonomy_level: FieldMetaAutonomyLevel;
+  human_oversight: FieldMetaBool;
 }
 export interface FieldMetaBool {
-  value?: Value4;
-  confidence?: Confidence4;
-  source?: Source4;
-  confirmed?: Confirmed4;
+  value: Value4;
+  confidence: Confidence4;
+  source: Source4;
+  confirmed: Confirmed4;
 }
 export interface FieldMetaModelSource {
-  value?: Value5;
-  confidence?: Confidence5;
-  source?: Source5;
-  confirmed?: Confirmed5;
+  value: Value5;
+  confidence: Confidence5;
+  source: Source5;
+  confirmed: Confirmed5;
 }
 export interface FieldMetaAutonomyLevel {
-  value?: Value6;
-  confidence?: Confidence6;
-  source?: Source6;
-  confirmed?: Confirmed6;
+  value: Value6;
+  confidence: Confidence6;
+  source: Source6;
+  confirmed: Confirmed6;
 }
 export interface Data {
-  processes_personal_data?: FieldMetaBool;
-  pii_categories?: FieldMetaListStr;
-  special_category_data?: FieldMetaListSpecialCategory;
-  biometric_identification?: FieldMetaBool;
-  data_subjects?: FieldMetaListDataSubject;
-  data_sources?: FieldMetaListStr;
-  trains_on_personal_data?: FieldMetaBool;
-  retention_policy?: FieldMetaStr;
-  cross_border_transfer?: FieldMetaBool;
+  processes_personal_data: FieldMetaBool;
+  pii_categories: FieldMetaListStr;
+  special_category_data: FieldMetaListSpecialCategory;
+  biometric_identification: FieldMetaBool;
+  data_subjects: FieldMetaListDataSubject;
+  data_sources: FieldMetaListStr;
+  trains_on_personal_data: FieldMetaBool;
+  retention_policy: FieldMetaStr;
+  cross_border_transfer: FieldMetaBool;
 }
 export interface FieldMetaListSpecialCategory {
-  value?: Value7;
-  confidence?: Confidence7;
-  source?: Source7;
-  confirmed?: Confirmed7;
+  value: Value7;
+  confidence: Confidence7;
+  source: Source7;
+  confirmed: Confirmed7;
 }
 export interface FieldMetaListDataSubject {
-  value?: Value8;
-  confidence?: Confidence8;
-  source?: Source8;
-  confirmed?: Confirmed8;
+  value: Value8;
+  confidence: Confidence8;
+  source: Source8;
+  confirmed: Confirmed8;
 }
 export interface UseCase {
-  domains?: FieldMetaListDomain;
-  purpose?: FieldMetaStr;
-  affects_legal_or_significant_effects?: FieldMetaBool;
-  interacts_directly_with_people?: FieldMetaBool;
-  generates_synthetic_content?: FieldMetaBool;
-  emotion_recognition?: FieldMetaBool;
-  social_scoring?: FieldMetaBool;
-  remote_biometric_id_public_spaces?: FieldMetaBool;
-  manipulative_or_subliminal?: FieldMetaBool;
-  untargeted_facial_scraping?: FieldMetaBool;
+  domains: FieldMetaListDomain;
+  purpose: FieldMetaStr;
+  affects_legal_or_significant_effects: FieldMetaBool;
+  interacts_directly_with_people: FieldMetaBool;
+  generates_synthetic_content: FieldMetaBool;
+  emotion_recognition: FieldMetaBool;
+  social_scoring: FieldMetaBool;
+  remote_biometric_id_public_spaces: FieldMetaBool;
+  manipulative_or_subliminal: FieldMetaBool;
+  untargeted_facial_scraping: FieldMetaBool;
 }
 export interface FieldMetaListDomain {
-  value?: Value9;
-  confidence?: Confidence9;
-  source?: Source9;
-  confirmed?: Confirmed9;
+  value: Value9;
+  confidence: Confidence9;
+  source: Source9;
+  confirmed: Confirmed9;
 }
 export interface Assessment {
-  eu_ai_act?: EuAiActAssessment;
-  overall_risk_tier?: RiskTier;
-  applicable_frameworks?: ApplicableFrameworks;
-  obligations?: Obligations;
-  recommended_next_steps?: RecommendedNextSteps;
-  open_questions?: OpenQuestions;
+  eu_ai_act: EuAiActAssessment;
+  overall_risk_tier: RiskTier;
+  applicable_frameworks: ApplicableFrameworks;
+  obligations: Obligations;
+  recommended_next_steps: RecommendedNextSteps;
+  open_questions: OpenQuestions;
 }
 export interface EuAiActAssessment {
-  classification?: EuAiActClassification;
-  annex_iii_categories?: AnnexIiiCategories;
-  rationale?: Rationale;
+  classification: EuAiActClassification;
+  annex_iii_categories: AnnexIiiCategories;
+  rationale: Rationale;
 }
 /**
  * Why a classification was reached, linked to the answer that drove it.
@@ -257,6 +258,6 @@ export interface Value10 {
 export interface Obligation {
   framework: Framework;
   text: Text1;
-  reference?: Reference;
-  role?: Role;
+  reference: Reference;
+  role: Role;
 }

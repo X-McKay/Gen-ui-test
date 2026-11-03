@@ -65,7 +65,9 @@ def create_agent_model(settings: Settings | None = None) -> BaseLlm:
         "inference.provider",
         extra={"provider": settings.inference_provider, "model": settings.model_id},
     )
-    return cast(BaseLlm, LiteLlm(model=settings.model_id, **completion_kwargs(settings)))
+    kwargs = completion_kwargs(settings)
+    model_id = str(kwargs.pop("model"))
+    return cast(BaseLlm, LiteLlm(model=model_id, **kwargs))
 
 
 async def health_check(settings: Settings | None = None) -> HealthStatus:

@@ -21,6 +21,7 @@ dependencies = [
     "slowapi>=0.1.9",
     "sse-starlette>=2.2",
     "boto3>=1.35",
+    "mcp>=2.3.0",
 ]
 
 [project.optional-dependencies]
@@ -32,6 +33,7 @@ dev = [
     "mypy>=1.14",
     "types-PyYAML",
     "respx>=0.22",
+    "jsonschema>=4.26.0",
 ]
 
 [build-system]
