@@ -1,5 +1,5 @@
 allowBuilds:
-  '@scarf/scarf': set this to true or false
+  '@scarf/scarf': false
   sharp: false
   unrs-resolver: false
 minimumReleaseAgeExclude:
@@ -14,5 +14,3 @@ minimumReleaseAgeExclude:
   - '@copilotkit/web-components@1.84.0'
   - '@copilotkit/web-inspector@1.84.0'
 
-ignoredBuiltDependencies:
-  - "@scarf/scarf"
