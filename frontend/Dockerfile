@@ -1,6 +1,6 @@
 # AI Governance Intake — frontend (Next.js 16 + CopilotKit runtime).
 #
-#   docker build -t intake-frontend --build-arg BACKEND_URL=http://backend:8000 frontend
+#   docker build -t intake-frontend frontend
 #   docker run --rm -p 3000:3000 -e BACKEND_URL=http://backend:8000 intake-frontend
 #
 # next.config.ts does not set `output: "standalone"`, so the image runs `next start` with the

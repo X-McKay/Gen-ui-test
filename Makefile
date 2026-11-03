@@ -46,14 +46,17 @@ install: ## Install backend (uv, dev extras), frontend (pnpm) and Playwright bro
 
 # ---- Run -----------------------------------------------------------------------------------
 
-# Both servers in one terminal. The trap stops the whole process group (uvicorn, next and
-# their children) on Ctrl-C or when either server exits. $(1) is the MOCK_MODEL value.
+# Both servers in one terminal (POSIX sh, no extra tooling). Ctrl-C reaches every process in
+# the foreground group; the trap then sends TERM to the whole group so no uvicorn/next child
+# survives, and the poll loop stops both servers when either one exits. $(1) = MOCK_MODEL.
 define run_both
 	@printf "backend  http://127.0.0.1:$(BACKEND_PORT)  (MOCK_MODEL=$(1))\nfrontend http://localhost:3000\n\n"
-	@trap 'trap - INT TERM EXIT; kill 0' INT TERM EXIT; \
+	@trap 'trap - INT TERM EXIT; kill 0 2>/dev/null' INT TERM EXIT; \
 	( cd $(BACKEND_DIR) && MOCK_MODEL=$(1) exec $(UV) run uvicorn app.main:app --reload --reload-dir app --port $(BACKEND_PORT) ) & \
+	backend_pid=$$!; \
 	( cd $(FRONTEND_DIR) && BACKEND_URL=$(BACKEND_URL) exec $(PNPM) dev ) & \
-	wait
+	frontend_pid=$$!; \
+	while kill -0 $$backend_pid 2>/dev/null && kill -0 $$frontend_pid 2>/dev/null; do sleep 1; done
 endef
 
 dev: ## Run backend and frontend with hot reload against the live model endpoint

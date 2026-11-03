@@ -33,7 +33,19 @@ class RequestIdFilter(logging.Filter):
         return True
 
 
-def configure_logging(level: str = "INFO") -> None:
+# Loggers that echo message content (prompt text, tool arguments) at INFO. They stay at
+# WARNING unless AG-UI event logging is switched on for local debugging.
+CONTENT_LOGGERS = (
+    "ag_ui_adk.adk_agent",
+    "ag_ui_adk.event_translator",
+    "ag_ui_adk.endpoint",
+    "ag_ui_adk.session_manager",
+    "google_adk",
+    "google.adk",
+)
+
+
+def configure_logging(level: str = "INFO", *, log_agui_events: bool = False) -> None:
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(
         JsonFormatter(
@@ -49,6 +61,8 @@ def configure_logging(level: str = "INFO") -> None:
     for noisy in ("httpx", "httpcore", "LiteLLM", "litellm", "urllib3"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     logging.getLogger("google_adk.google.adk.telemetry._metrics").setLevel(logging.ERROR)
+    for name in CONTENT_LOGGERS:
+        logging.getLogger(name).setLevel(logging.DEBUG if log_agui_events else logging.WARNING)
 
 
 async def request_id_middleware(
