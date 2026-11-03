@@ -39,13 +39,11 @@ function SubmitBar({
   complete,
   submitting,
   error,
-  onSubmit,
 }: {
   confirmLabel: string;
   complete: boolean;
   submitting: boolean;
   error: string | null;
-  onSubmit: () => void;
 }) {
   const form = useInterviewForm();
   const questionCount = Object.keys(form?.answers ?? {}).length;
@@ -68,7 +66,6 @@ function SubmitBar({
         disabled={!complete || submitting}
         data-testid="confirm-step"
         data-answers={questionCount}
-        onClick={onSubmit}
       >
         {submitting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
         {confirmLabel}
@@ -183,7 +180,7 @@ function StepBody({
       data-testid="InterviewStep"
       data-section={section}
       aria-labelledby={headingId}
-      className={cn("surface-enter grid gap-6 rounded-[var(--radius)] border bg-card p-5 shadow-sm sm:p-6", submitting && "opacity-80")}
+      className={cn("surface-enter grid grid-cols-1 gap-6 rounded-[var(--radius)] border bg-card p-5 shadow-sm sm:p-6", submitting && "opacity-80")}
       onSubmit={(event) => {
         event.preventDefault();
         if (complete && !submitting) submit();
@@ -202,7 +199,7 @@ function StepBody({
           {questions}
         </div>
       ) : null}
-      <SubmitBar confirmLabel={confirmLabel} complete={complete} submitting={submitting} error={error} onSubmit={submit} />
+      <SubmitBar confirmLabel={confirmLabel} complete={complete} submitting={submitting} error={error} />
     </form>
   );
 }

@@ -165,11 +165,14 @@ export function IntakeSurface({ intakeId, initialMessage, initialStatus, childre
 
   const step = state.intake_step;
   const status = state.intake_record?.meta.status;
+  // Leave only after the final run has finished: navigating mid-stream aborts the run, and
+  // ag_ui_adk keeps an aborted run's execution slot until it times out.
   useEffect(() => {
+    if (running) return;
     if (step?.kind === "done" || status === "completed" || status === "submitted") {
       router.push(`/intake/${intakeId}/review`);
     }
-  }, [step?.kind, status, intakeId, router]);
+  }, [running, step?.kind, status, intakeId, router]);
 
   const statusText = useMemo(() => {
     if (error) return null;
@@ -178,7 +181,7 @@ export function IntakeSurface({ intakeId, initialMessage, initialStatus, childre
   }, [error, running, state.intake_status, step, initialStatus]);
 
   return (
-    <div className="grid gap-5" data-testid="intake-surface" data-step={step?.step_number ?? 0}>
+    <div className="grid grid-cols-1 gap-5 [contain:inline-size]" data-testid="intake-surface" data-step={step?.step_number ?? 0}>
       <ProgressRail sections={step?.progress ?? EMPTY_PROGRESS} />
       {children}
       <StatusLine text={statusText} busy={running} />

@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import { waitForHydration } from "../fixtures/hydration";
 import { InterviewStepHelper } from "./InterviewStep";
 import { type InterviewRun, type RunOptions, runInterview } from "./interviewFlow";
 
@@ -46,6 +47,7 @@ export class ExistingProjectPage {
 
   async goto(): Promise<void> {
     await this.page.goto("/intake/existing");
+    await waitForHydration(this.page);
     await expect(this.form).toBeVisible();
   }
 

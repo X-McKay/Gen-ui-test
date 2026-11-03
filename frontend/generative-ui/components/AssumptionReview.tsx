@@ -119,7 +119,7 @@ function Chip({ item }: { item: AssumptionItem }) {
   return (
     <li
       className={cn(
-        "surface-enter grid gap-2 rounded-[var(--radius)] border bg-card p-2 pl-3 transition-colors",
+        "surface-enter grid min-w-0 grid-cols-1 gap-2 rounded-[var(--radius)] border bg-card p-2 pl-3 transition-colors",
         state === "confirmed" && "border-primary/50 bg-primary/5",
         state === "editing" && "border-ring",
       )}
@@ -138,7 +138,7 @@ function Chip({ item }: { item: AssumptionItem }) {
           <button
             type="button"
             className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={`Provenance for ${item.label}`}
+            aria-label={`${item.label}: ${labelFor(item, value)}. Show provenance`}
           >
             <span className="shrink-0 text-muted-foreground">{item.label}</span>
             <span className="min-w-0 truncate font-medium text-foreground" title={labelFor(item, value)}>
@@ -197,7 +197,7 @@ export function AssumptionReview({ title = "What we understood", assumptions }: 
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
         <p className="text-xs text-muted-foreground">Confirming the step confirms every chip. Edit anything that is off.</p>
       </div>
-      <ul className="grid gap-2 sm:grid-cols-2" role="list">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="list">
         {assumptions.map((item) => (
           <Chip key={item.field} item={item} />
         ))}

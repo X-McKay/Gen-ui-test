@@ -2,6 +2,8 @@ import fs from "node:fs/promises";
 
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import { waitForHydration } from "../fixtures/hydration";
+
 /** `/intake/<id>/review`: classification, fields, provenance and exports. */
 export class ReviewPage {
   readonly header: Locator;
@@ -41,6 +43,7 @@ export class ReviewPage {
 
   async waitForLoaded(): Promise<void> {
     await this.page.waitForURL(/\/intake\/[^/]+\/review/);
+    await waitForHydration(this.page);
     await expect(this.classification).toBeVisible({ timeout: 30_000 });
     await expect(this.downloadJsonButton).toBeVisible();
   }

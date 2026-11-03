@@ -98,7 +98,7 @@ export function formatRepoUrl(url: string | null | undefined): string {
   if (!url) return EMPTY_VALUE;
   try {
     const parsed = new URL(url);
-    const path = parsed.pathname.replace(/\.git$/, "").replace(/^\/+|\/+$/g, "");
+    const path = parsed.pathname.replace(/^\/+|\/+$/g, "").replace(/\.git$/, "");
     return `${parsed.host}/${path}`;
   } catch {
     return url;

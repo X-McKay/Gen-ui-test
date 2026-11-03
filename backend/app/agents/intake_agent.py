@@ -121,4 +121,6 @@ def create_adk_agent(settings: Settings | None = None) -> ADKAgent:
         user_id="intake-user",
         use_in_memory_services=True,
         run_config_factory=run_config_for,
+        max_concurrent_executions=settings.agent_max_concurrent_runs,
+        execution_timeout_seconds=settings.agent_execution_timeout_s,
     )

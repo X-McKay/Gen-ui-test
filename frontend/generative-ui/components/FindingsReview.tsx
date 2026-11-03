@@ -47,6 +47,19 @@ function labelFor(item: FindingItem, value: unknown): string {
   return labels.get(String(value)) ?? String(value);
 }
 
+function Evidence({ item }: { item: FindingItem }) {
+  return (
+    <div className="grid gap-1 text-xs">
+      <code className="truncate font-mono text-[11px] text-muted-foreground" title={item.evidencePath}>
+        {item.evidencePath}
+      </code>
+      <code className="line-clamp-2 whitespace-pre-wrap break-words rounded bg-muted px-1.5 py-1 font-mono text-[11px] text-foreground/80">
+        {item.snippet}
+      </code>
+    </div>
+  );
+}
+
 function Row({ item }: { item: FindingItem }) {
   const form = useInterviewForm();
   const [editing, setEditing] = useState(false);
@@ -65,7 +78,7 @@ function Row({ item }: { item: FindingItem }) {
       data-state={editing ? "editing" : corrected ? "corrected" : "pending"}
       className={cn("align-top", corrected && "bg-primary/5")}
     >
-      <th scope="row" className="py-3 pr-3 text-left text-sm font-medium text-foreground">
+      <th scope="row" className="py-3 pr-3 text-left text-sm font-medium text-foreground break-words">
         {item.label}
       </th>
       <td className="py-3 pr-3 text-sm">
@@ -112,17 +125,15 @@ function Row({ item }: { item: FindingItem }) {
             </div>
           </div>
         ) : (
-          <span className="font-medium">{labelFor(item, value)}</span>
+          <span className="font-medium break-words">{labelFor(item, value)}</span>
         )}
+        <div className="mt-2 sm:hidden" data-testid="evidence-snippet-compact">
+          <Evidence item={item} />
+        </div>
       </td>
-      <td className="py-3 pr-3 text-xs">
-        <div className="grid gap-1" data-testid="evidence-snippet">
-          <code className="truncate font-mono text-[11px] text-muted-foreground" title={item.evidencePath}>
-            {item.evidencePath}
-          </code>
-          <code className="line-clamp-2 whitespace-pre-wrap break-words rounded bg-muted px-1.5 py-1 font-mono text-[11px] text-foreground/80">
-            {item.snippet}
-          </code>
+      <td className="py-3 pr-3 text-xs max-sm:hidden">
+        <div data-testid="evidence-snippet">
+          <Evidence item={item} />
         </div>
       </td>
       <td className="py-3 pr-2 text-sm">
@@ -170,15 +181,22 @@ export function FindingsReview({ title = "What we found in the repository", find
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
         <p className="text-xs text-muted-foreground">Confirming the step accepts every row. Correct anything that is wrong.</p>
       </div>
-      <div className="overflow-x-auto rounded-[var(--radius)] border bg-card">
-        <table className="w-full min-w-[640px] border-collapse text-left" data-testid="findings-table">
+      <div className="min-w-0 overflow-x-auto rounded-[var(--radius)] border bg-card [contain:inline-size]">
+        <table className="w-full table-fixed border-collapse text-left sm:min-w-[640px] sm:table-auto" data-testid="findings-table">
+          <colgroup>
+            <col className="w-[34%] sm:w-auto" />
+            <col />
+            <col className="max-sm:hidden" />
+            <col className="w-13 sm:w-auto" />
+            <col className="w-10 sm:w-auto" />
+          </colgroup>
           <caption className="sr-only">Repository findings: field, inferred value, evidence and confidence</caption>
           <thead>
             <tr className="border-b text-xs uppercase tracking-wide text-muted-foreground">
               <th scope="col" className="px-3 py-2 font-medium">Field</th>
               <th scope="col" className="px-3 py-2 font-medium">Inferred value</th>
-              <th scope="col" className="px-3 py-2 font-medium">Evidence</th>
-              <th scope="col" className="px-3 py-2 font-medium">Confidence</th>
+              <th scope="col" className="px-3 py-2 font-medium max-sm:hidden">Evidence</th>
+              <th scope="col" className="px-3 py-2 font-medium"><span className="max-sm:sr-only">Confidence</span></th>
               <th scope="col" className="px-3 py-2 font-medium"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>

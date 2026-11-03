@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     # Web ---------------------------------------------------------------------------------
     frontend_origin: str = "http://localhost:3000"
     agent_rate_limit: str = "60/minute"
+    # Interview threads waiting on the user (a rendered step) hold an execution slot in
+    # ag_ui_adk until they finish or go stale, so this is the number of open interviews.
+    agent_max_concurrent_runs: int = 200
+    agent_execution_timeout_s: int = 600
     default_owner: str | None = None
     intake_webhook_url: str | None = None
 

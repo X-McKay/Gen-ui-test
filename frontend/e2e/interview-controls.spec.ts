@@ -55,12 +55,16 @@ test.describe("interview controls", () => {
     for (const field of CHOICE_CHIP_CANDIDATES) {
       if ((await helper.chip(field).count()) === 0) continue;
       const editor = await helper.openChipEditor(field);
-      const alternative = editor.locator('[role="radio"][aria-checked="false"]:not([data-value="unknown"])').first();
-      if ((await alternative.count()) === 0) continue;
-      const value = await alternative.getAttribute("data-value");
-      await alternative.click();
-      await expect(alternative).toHaveAttribute("aria-checked", "true");
-      if (value) chipEdit = { field, value };
+      const unchecked = editor.locator('[role="radio"][aria-checked="false"]:not([data-value="unknown"])');
+      if ((await unchecked.count()) === 0) continue;
+      const value = await unchecked.first().getAttribute("data-value");
+      if (!value) continue;
+      // Pin the option by value: the "unchecked" locator would re-resolve after the click.
+      const option = editor.locator(`[role="radio"][data-value="${value}"]`);
+      await option.click();
+      await expect(option).toHaveAttribute("aria-checked", "true");
+      await expect(helper.chip(field)).toHaveAttribute("data-state", "editing");
+      chipEdit = { field, value };
       break;
     }
     if (!LIVE) expect(chipEdit, "no editable choice chip found in the first step").not.toBeNull();

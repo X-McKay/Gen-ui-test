@@ -1,4 +1,3 @@
-import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { describe, expect, it } from "vitest";
 
 import { INTAKE_CATALOG_ID, intakeUI } from "@/generative-ui/intakeCatalog";
@@ -16,12 +15,17 @@ const EXPECTED_COMPONENTS = [
 
 type ComponentName = (typeof EXPECTED_COMPONENTS)[number];
 
+/** The Standard Schema surface every props schema exposes (zod 4 implements it). */
+interface StandardSchemaLike {
+  "~standard": { validate: (input: unknown) => { issues?: readonly unknown[] } | Promise<{ issues?: readonly unknown[] }> };
+}
+
 async function validate(name: ComponentName, input: unknown): Promise<boolean> {
   const component = intakeUI.components.get(name);
   if (!component?.props) throw new Error(`${name} has no props schema`);
-  const schema = component.props as StandardSchemaV1<Record<string, unknown>>;
+  const schema = component.props as unknown as StandardSchemaLike;
   const result = await schema["~standard"].validate(input);
-  return !("issues" in result && result.issues && result.issues.length > 0);
+  return !(result.issues && result.issues.length > 0);
 }
 
 const OPTIONS = [

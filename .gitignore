@@ -17,6 +17,7 @@ out/
 frontend/.env*.local
 frontend/test-results/
 frontend/playwright-report/
+frontend/e2e/.state/
 frontend/blob-report/
 frontend/playwright/.cache/
 

@@ -1,5 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import { waitForHydration } from "../fixtures/hydration";
+
 /** `/`: the two mode cards and the theme toggle. */
 export class LandingPage {
   readonly newCard: Locator;
@@ -16,6 +18,7 @@ export class LandingPage {
 
   async goto(): Promise<void> {
     await this.page.goto("/");
+    await waitForHydration(this.page);
     await expect(this.newCard).toBeVisible();
     await expect(this.existingCard).toBeVisible();
   }

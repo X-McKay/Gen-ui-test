@@ -20,19 +20,18 @@ export async function paceEventSource(page: Page, gapMs = 150): Promise<void> {
       options?: boolean | AddEventListenerOptions,
     ): void {
       if (!listener) return;
-      const source = this;
       const wrapped = (event: Event) => {
-        const queue = (queues.get(source) ?? Promise.resolve())
+        const queue = (queues.get(this) ?? Promise.resolve())
           .then(() => new Promise<void>((resolve) => window.setTimeout(resolve, gap)))
           .then(() => {
             // Once the page closed the source (after `done`), drop whatever is still queued.
-            if (source.readyState === EventSource.CLOSED) return;
-            if (typeof listener === "function") listener.call(source, event);
+            if (this.readyState === EventSource.CLOSED) return;
+            if (typeof listener === "function") listener.call(this, event);
             else listener.handleEvent(event);
           });
-        queues.set(source, queue);
+        queues.set(this, queue);
       };
-      original.call(source, type, wrapped, options);
+      original.call(this, type, wrapped, options);
     };
     prototype.addEventListener = paced as typeof prototype.addEventListener;
   }, gapMs);

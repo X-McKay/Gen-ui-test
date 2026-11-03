@@ -119,7 +119,8 @@ describe("formatQuestionCount", () => {
 
 describe("formatRepoUrl", () => {
   it("shortens to host/org/repo and strips .git", () => {
-    expect(formatRepoUrl("https://github.com/intake-fixtures/hr-screening.git/")).toBe("github.com/intake-fixtures/hr-screening");
+    expect(formatRepoUrl("https://github.com/intake-fixtures/hr-screening.git")).toBe("github.com/intake-fixtures/hr-screening");
+    expect(formatRepoUrl("https://github.com/intake-fixtures/hr-screening/")).toBe("github.com/intake-fixtures/hr-screening");
     expect(formatRepoUrl(null)).toBe(EMPTY_VALUE);
     expect(formatRepoUrl("not a url")).toBe("not a url");
   });

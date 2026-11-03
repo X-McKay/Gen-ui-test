@@ -8,7 +8,6 @@ export default defineConfig({
   resolve: {
     alias: { "@": root },
   },
-  esbuild: { jsx: "automatic" },
   test: {
     environment: "jsdom",
     include: ["__tests__/**/*.test.{ts,tsx}"],

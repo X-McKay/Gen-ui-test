@@ -133,6 +133,8 @@ All settings come from the environment (`backend/app/settings.py`, pydantic-sett
 | `DATABASE_URL` | `sqlite:///./intake.db` | Any SQLAlchemy URL, e.g. `postgresql+psycopg://…`. |
 | `FRONTEND_ORIGIN` | `http://localhost:3000` | CORS allow-origin for the API. |
 | `AGENT_RATE_LIMIT` | `60/minute` | Sliding-window limit per client address on `POST /agent` (429 beyond it). |
+| `AGENT_MAX_CONCURRENT_RUNS` | `200` | Open interviews the agent keeps at once; every rendered step holds an execution slot until the interview finishes or goes stale. |
+| `AGENT_EXECUTION_TIMEOUT_S` | `600` | Seconds after which an abandoned interview's slot is reclaimed. |
 | `DEFAULT_OWNER` | empty | Prefilled `project.owner` when no SSO header is present. |
 | `INTAKE_WEBHOOK_URL` | empty | Submit posts the JSON export here; unset marks the intake submitted locally and says so. |
 | `REPO_ALLOWED_HOSTS` | `["github.com","gitlab.com","dev.azure.com"]` | Hosts (and subdomains) that may be cloned. JSON list. |

@@ -2,12 +2,21 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import { FIXTURE_REPOSITORIES, HR_SCREENING, LOG_SEARCH, PROJECT_NAME, PROJECT_OWNER } from "./fixtures/descriptions";
+import { waitForHydration } from "./fixtures/hydration";
 import { tabUntil } from "./fixtures/keyboard";
 import { readSeedState } from "./fixtures/state";
 import { ExistingProjectPage, InterviewStepHelper, LandingPage, NewProjectPage, ReviewPage } from "./pages";
 
+/**
+ * The CopilotKit inspector (`<cpk-web-inspector>`) only mounts in `next dev` and is not part
+ * of the product, so it is left out of the scan. Everything else on the page is checked.
+ */
+const DEV_ONLY_WIDGETS = ["cpk-web-inspector"];
+
 async function expectNoSeriousViolations(page: Page, testInfo: TestInfo, name: string): Promise<void> {
-  const results = await new AxeBuilder({ page }).analyze();
+  let builder = new AxeBuilder({ page });
+  for (const selector of DEV_ONLY_WIDGETS) builder = builder.exclude(selector);
+  const results = await builder.analyze();
   await testInfo.attach(`axe-${name}`, { body: JSON.stringify(results.violations, null, 2), contentType: "application/json" });
   const serious = results.violations
     .filter((violation) => violation.impact === "critical" || violation.impact === "serious")
@@ -16,6 +25,10 @@ async function expectNoSeriousViolations(page: Page, testInfo: TestInfo, name: s
 }
 
 test.describe("accessibility", () => {
+  // Scan the settled page: with reduced motion the entrance animations are off, so axe
+  // does not measure colours half-way through a fade.
+  test.use({ reducedMotion: "reduce" });
+
   test("landing has no critical or serious axe violations", async ({ page }, testInfo) => {
     await new LandingPage(page).goto();
     await expectNoSeriousViolations(page, testInfo, "landing");
@@ -45,6 +58,7 @@ test.describe("accessibility", () => {
 
   test("the log-search flow completes with the keyboard only", async ({ page }) => {
     await page.goto("/intake/new");
+    await waitForHydration(page);
     await tabUntil(page, '[data-testid="project-description"]');
     await page.keyboard.insertText(LOG_SEARCH);
     await tabUntil(page, '[data-testid="project-name"]');

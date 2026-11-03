@@ -24,7 +24,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: isCI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  // The backend agent (ag-ui-adk `ADKAgent`) allows 10 concurrent executions; every
+  // worker holds one while a step streams, so the local default stays well under that.
+  // Override with E2E_WORKERS.
+  workers: process.env.CI ? 2 : Number(process.env.E2E_WORKERS ?? 4),
   reporter: [["html", { open: "never" }], ["list"]],
   timeout: live ? 240_000 : 120_000,
   expect: {
@@ -65,7 +68,8 @@ export default defineConfig({
           command: production ? "pnpm exec next start --port 3000" : "pnpm exec next dev --port 3000",
           cwd: __dirname,
           url: `${baseURL}/api/backend/healthz`,
-          env: { BACKEND_URL: backendURL },
+          // The CopilotKit inspector is a dev-only widget; its announcement popup overlays the page.
+          env: { BACKEND_URL: backendURL, NEXT_PUBLIC_ENABLE_INSPECTOR: "0" },
           reuseExistingServer: !isCI,
           timeout: 180_000,
           stdout: "ignore",
