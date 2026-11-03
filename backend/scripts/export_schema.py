@@ -12,8 +12,21 @@ ROOT = Path(__file__).resolve().parents[2]
 TARGET = ROOT / "schema" / "intake.schema.json"
 
 
+def _require_all_properties(schema: dict[str, object]) -> None:
+    """Serialisation always emits every key, so the schema requires every property."""
+    definitions = schema.get("$defs")
+    targets: list[dict[str, object]] = [schema]
+    if isinstance(definitions, dict):
+        targets.extend(value for value in definitions.values() if isinstance(value, dict))
+    for target in targets:
+        properties = target.get("properties")
+        if isinstance(properties, dict) and properties:
+            target["required"] = list(properties)
+
+
 def render() -> str:
     schema = IntakeRecord.model_json_schema()
+    _require_all_properties(schema)
     schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
     schema["$id"] = "https://intake.local/schema/intake.schema.json"
     schema["title"] = "IntakeRecord"

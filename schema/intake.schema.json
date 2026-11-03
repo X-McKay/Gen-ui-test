@@ -29,7 +29,17 @@
         }
       },
       "title": "AiSystem",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "uses_ai",
+        "model_types",
+        "model_source",
+        "model_providers",
+        "gpai_model_used",
+        "fine_tuned_or_trained",
+        "autonomy_level",
+        "human_oversight"
+      ]
     },
     "Assessment": {
       "additionalProperties": false,
@@ -72,7 +82,15 @@
         }
       },
       "title": "Assessment",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "eu_ai_act",
+        "overall_risk_tier",
+        "applicable_frameworks",
+        "obligations",
+        "recommended_next_steps",
+        "open_questions"
+      ]
     },
     "AutonomyLevel": {
       "enum": [
@@ -115,7 +133,18 @@
         }
       },
       "title": "Data",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "processes_personal_data",
+        "pii_categories",
+        "special_category_data",
+        "biometric_identification",
+        "data_subjects",
+        "data_sources",
+        "trains_on_personal_data",
+        "retention_policy",
+        "cross_border_transfer"
+      ]
     },
     "DataSubject": {
       "enum": [
@@ -166,7 +195,12 @@
         }
       },
       "title": "EuAiActAssessment",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "classification",
+        "annex_iii_categories",
+        "rationale"
+      ]
     },
     "EuAiActClassification": {
       "enum": [
@@ -217,7 +251,13 @@
         }
       },
       "title": "FieldMeta[AutonomyLevel]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_LifecycleStage_": {
       "additionalProperties": false,
@@ -258,7 +298,13 @@
         }
       },
       "title": "FieldMeta[LifecycleStage]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_ModelSource_": {
       "additionalProperties": false,
@@ -299,7 +345,13 @@
         }
       },
       "title": "FieldMeta[ModelSource]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_TargetUsers_": {
       "additionalProperties": false,
@@ -340,7 +392,13 @@
         }
       },
       "title": "FieldMeta[TargetUsers]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_bool_": {
       "additionalProperties": false,
@@ -381,7 +439,13 @@
         }
       },
       "title": "FieldMeta[bool]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_list_DataSubject__": {
       "additionalProperties": false,
@@ -425,7 +489,13 @@
         }
       },
       "title": "FieldMeta[list[DataSubject]]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_list_Domain__": {
       "additionalProperties": false,
@@ -469,7 +539,13 @@
         }
       },
       "title": "FieldMeta[list[Domain]]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_list_SpecialCategory__": {
       "additionalProperties": false,
@@ -513,7 +589,13 @@
         }
       },
       "title": "FieldMeta[list[SpecialCategory]]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_list_str__": {
       "additionalProperties": false,
@@ -557,7 +639,13 @@
         }
       },
       "title": "FieldMeta[list[str]]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "FieldMeta_str_": {
       "additionalProperties": false,
@@ -598,7 +686,13 @@
         }
       },
       "title": "FieldMeta[str]",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
     },
     "IntakeMode": {
       "enum": [
@@ -715,7 +809,17 @@
         }
       },
       "required": [
-        "intake_id"
+        "intake_id",
+        "schema_version",
+        "mode",
+        "status",
+        "repo_url",
+        "created_at",
+        "updated_at",
+        "completed_at",
+        "submitted_at",
+        "question_count",
+        "analysis_progress"
       ],
       "title": "Meta",
       "type": "object"
@@ -772,7 +876,9 @@
       },
       "required": [
         "framework",
-        "text"
+        "text",
+        "reference",
+        "role"
       ],
       "title": "Obligation",
       "type": "object"
@@ -806,7 +912,17 @@
         }
       },
       "title": "Project",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "name",
+        "description",
+        "owner",
+        "team",
+        "business_unit",
+        "lifecycle_stage",
+        "target_users",
+        "deployment_regions"
+      ]
     },
     "RationaleEntry": {
       "additionalProperties": false,
@@ -914,7 +1030,19 @@
         }
       },
       "title": "UseCase",
-      "type": "object"
+      "type": "object",
+      "required": [
+        "domains",
+        "purpose",
+        "affects_legal_or_significant_effects",
+        "interacts_directly_with_people",
+        "generates_synthetic_content",
+        "emotion_recognition",
+        "social_scoring",
+        "remote_biometric_id_public_spaces",
+        "manipulative_or_subliminal",
+        "untargeted_facial_scraping"
+      ]
     }
   },
   "additionalProperties": false,
@@ -939,7 +1067,12 @@
     }
   },
   "required": [
-    "meta"
+    "meta",
+    "project",
+    "ai_system",
+    "data",
+    "use_case",
+    "assessment"
   ],
   "title": "IntakeRecord",
   "type": "object",

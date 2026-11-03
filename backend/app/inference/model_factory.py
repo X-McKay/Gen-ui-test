@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import Any, cast
 
 from google.adk.models.base_llm import BaseLlm
 from google.adk.models.lite_llm import LiteLlm
@@ -65,7 +65,7 @@ def create_agent_model(settings: Settings | None = None) -> BaseLlm:
         "inference.provider",
         extra={"provider": settings.inference_provider, "model": settings.model_id},
     )
-    return LiteLlm(model=settings.model_id, **completion_kwargs(settings))
+    return cast(BaseLlm, LiteLlm(model=settings.model_id, **completion_kwargs(settings)))
 
 
 async def health_check(settings: Settings | None = None) -> HealthStatus:
