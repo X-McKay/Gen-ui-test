@@ -8,15 +8,24 @@ export async function tabUntil(page: Page, selector: string, options: { maxTabs?
   const maxTabs = options.maxTabs ?? 150;
   for (let i = 0; i < maxTabs; i += 1) {
     await page.keyboard.press("Tab");
-    const hit = await page.evaluate(
-      ([sel, within]) => {
-        const active = document.activeElement;
-        if (!active || active === document.body) return false;
-        if (active.matches(sel)) return true;
-        return within ? Boolean(active.closest(sel)) : false;
-      },
-      [selector, Boolean(options.within)] as const,
-    );
+    let hit = false;
+    try {
+      hit = await page.evaluate(
+        ([sel, within]) => {
+          const active = document.activeElement;
+          if (!active || active === document.body) return false;
+          if (active.matches(sel)) return true;
+          return within ? Boolean(active.closest(sel)) : false;
+        },
+        [selector, Boolean(options.within)] as const,
+      );
+    } catch (error) {
+      // `next dev` performs a full reload after a cold compile; the document is replaced and
+      // focus starts over. Wait for the new document to hydrate and keep counting.
+      if (!(error instanceof Error && error.message.includes("Execution context was destroyed"))) throw error;
+      await page.waitForLoadState("domcontentloaded");
+      await page.getByTestId("theme-toggle").waitFor({ timeout: 30_000 });
+    }
     if (hit) return;
   }
   throw new Error(`Tab never reached ${selector} within ${maxTabs} presses`);

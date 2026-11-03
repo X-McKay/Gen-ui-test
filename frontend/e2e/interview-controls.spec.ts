@@ -85,7 +85,8 @@ test.describe("interview controls", () => {
       expect(fieldValue(record, chipEdit.field)).toBe(chipEdit.value);
       await expect(run.review.field(chipEdit.field)).toBeVisible();
     }
-    expect(run.answers.length).toBeGreaterThan(0);
+    // The live model may infer every field from the description and ask nothing.
+    if (!LIVE) expect(run.answers.length).toBeGreaterThan(0);
     if (!LIVE) {
       expect([...kinds].sort()).toEqual(["ChoiceQuestion", "ShortTextQuestion", "YesNoQuestion"]);
     }

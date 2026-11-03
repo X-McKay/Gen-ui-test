@@ -84,3 +84,9 @@ def test_foreign_surfaces_and_targets_are_left_alone() -> None:
         is None
     )
     assert repair_operations({"target": "interview", "operations": "nope"}, step) is None
+
+
+def test_empty_operations_ask_the_server_to_render_the_plan() -> None:
+    step = _step()
+    repaired = repair_operations({"target": "interview", "operations": []}, step)
+    assert repaired == {"target": "interview", "operations": build_operations(step)}

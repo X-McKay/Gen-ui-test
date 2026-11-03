@@ -50,10 +50,12 @@ one of four server tools; the server validates values against the schema, stamps
 (`source`, `confidence`, `confirmed`) and reclassifies. The model never decides what is
 required (`question_bank.py`), what is asked next (`gap_analysis.py`), what the risk tier is
 (`governance/`), or what the UI looks like (`get_next_questions` returns a ready-made
-`render_plan`; the model may rewrite the step intro, nothing else). The CopilotKit runtime
+`render_plan`; the model calls `render_ui(target="interview", operations=[])` and the server
+substitutes the plan, or passes the plan with only the intro rewritten). The CopilotKit runtime
 rejects any `render_ui` operation that is not in the catalog and returns the rejection to the
-agent, which re-renders; the server additionally repairs a mangled render plan before it is
-forwarded (`app/agents/render_repair.py`). The same deterministic path runs with
+agent, which re-renders; the server restores the plan behind every `render_ui` call for the
+current step before it is forwarded (`app/agents/render_repair.py`), so a 30-finding step
+renders in a few seconds instead of waiting for the model to copy it. The same deterministic path runs with
 `MOCK_MODEL=1`, where a scripted model drives the identical tool loop from a keyword
 extractor, so CI and the mock Playwright suite never touch the network.
 
@@ -126,8 +128,8 @@ All settings come from the environment (`backend/app/settings.py`, pydantic-sett
 | `AWS_REGION` | unset | Required for `INFERENCE_PROVIDER=bedrock`; credentials come from the standard AWS chain. |
 | `INFERENCE_TIMEOUT_S` | `60` | Per-call model timeout. |
 | `INFERENCE_MAX_RETRIES` | `2` | LiteLLM retries. |
-| `MOCK_MODEL` | `0` | `1` swaps in `ScriptedLlm`: same tools, same `render_ui` calls, no network. Also serves fixture repositories. |
-| `ENVIRONMENT` | `development` | `development`, `test` or `production`. |
+| `MOCK_MODEL` | `0` | `1` swaps in `ScriptedLlm`: same tools, same `render_ui` calls, no network. |
+| `ENVIRONMENT` | `development` | `development`, `test` or `production`. Outside `production` the two fixture repositories (`https://github.com/intake-fixtures/hr-screening`, `.../log-search`) are served from bundled directories without a clone. |
 | `LOG_LEVEL` | `INFO` | Root log level. |
 | `LOG_AGUI_EVENTS` | `0` | `1` raises the AG-UI/ADK loggers to DEBUG (they echo message content; local debugging only). |
 | `DATABASE_URL` | `sqlite:///./intake.db` | Any SQLAlchemy URL, e.g. `postgresql+psycopg://…`. |

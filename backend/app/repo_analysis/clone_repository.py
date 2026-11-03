@@ -10,8 +10,8 @@ Security posture:
 - Repository code is never executed; the size is checked after the clone.
 - Every exception message is passed through :func:`redact_secrets` before it propagates.
 
-Under ``MOCK_MODEL=1`` a handful of fixture URLs resolve to bundled directories without
-touching the network (see :data:`FIXTURE_REPOSITORIES`).
+Outside ``ENVIRONMENT=production`` a handful of fixture URLs resolve to bundled directories
+without touching the network (see :data:`FIXTURE_REPOSITORIES`).
 """
 
 from __future__ import annotations
@@ -233,7 +233,8 @@ def directory_size(root: Path, *, limit_bytes: int | None = None) -> int:
 
 
 def _fixture_for(url: str) -> Path | None:
-    if not get_settings().mock_model:
+    # Fixture repositories are test data: served outside production regardless of the model.
+    if get_settings().is_production:
         return None
     normalised = url.rstrip("/").removesuffix(".git")
     fixture = FIXTURE_REPOSITORIES.get(normalised)

@@ -185,7 +185,10 @@ chromium-only); `make test-backend` reported 419 tests and 100 % branch coverage
 - [x] **Rules engine at 100 % branch coverage** — verified by `make test-backend`
   (`--cov=app/governance --cov-fail-under=100`; 100 % at the time of writing).
 - [x] **Schema and generated types fresh** — verified by `make check-schema`.
-- [ ] **Live model run** — verified by `make e2e-live` / the nightly `E2E (live model)` workflow.
+- [x] **Live model run** — `make e2e-live` on chromium against `https://llm.almckay.io/v1`
+  (`Qwen3.6-35B-A3B-NVFP4`) on 2026-11-03: 23 passed, 5 skipped (visual baselines and the
+  resume case are skipped when the model's wording or question count can vary), 0 failed,
+  4.4 minutes. The nightly `E2E (live model)` workflow repeats it.
 
 ## Reproduce
 

@@ -1,5 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
+import { LIVE } from "../fixtures/live";
+
 export type QuestionKind = "ChoiceQuestion" | "MultiSelectQuestion" | "YesNoQuestion" | "ShortTextQuestion";
 
 export const QUESTION_KINDS: readonly QuestionKind[] = [
@@ -76,7 +78,8 @@ export class InterviewStepHelper {
   }
 
   /** Waits until the surface shows a step after `after`, or the review page opened. */
-  async waitForAdvance(after: number, timeout = 60_000): Promise<Advance> {
+  // A live first step (extraction plus reasoning) takes 30–60 s on its own; workers share the model.
+  async waitForAdvance(after: number, timeout = LIVE ? 180_000 : 60_000): Promise<Advance> {
     await this.page.waitForFunction(
       (previous) => {
         if (/\/intake\/[^/]+\/review/.test(location.pathname)) return true;
@@ -104,7 +107,7 @@ export class InterviewStepHelper {
    * The agent may re-render while its run finishes. Wait until the step number and the
    * busy flag have been stable for a few polls so clicks land on the final DOM.
    */
-  async settle(timeout = 30_000): Promise<void> {
+  async settle(timeout = LIVE ? 120_000 : 30_000): Promise<void> {
     const deadline = Date.now() + timeout;
     let stable = 0;
     let previous = "";

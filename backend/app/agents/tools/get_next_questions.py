@@ -107,8 +107,9 @@ def get_next_questions(tool_context: ToolContext, resume: bool = False) -> dict[
         response["next"] = "Call render_ui with render_plan, then stop."
     else:
         response["next"] = (
-            "Call render_ui with target 'interview' and operations = render_plan.operations. "
-            "You may rephrase the root 'intro' (two sentences at most)."
+            "Call render_ui with target 'interview' and operations = [] (the server renders "
+            "render_plan). Only pass render_plan.operations yourself to rephrase the root "
+            "'intro' (two sentences at most)."
         )
     description = str(record.project.description.value or "")
     if INVALID_COMPONENT_FIXTURE in description and step.step_number == 1:

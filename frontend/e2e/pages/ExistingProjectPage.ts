@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
 import { waitForHydration } from "../fixtures/hydration";
+import { LIVE } from "../fixtures/live";
 import { InterviewStepHelper } from "./InterviewStep";
 import { type InterviewRun, type RunOptions, runInterview } from "./interviewFlow";
 
@@ -59,7 +60,7 @@ export class ExistingProjectPage {
   }
 
   /** Submit the URL and wait until the findings surface is on screen. */
-  async analyze(url: string, timeout = 120_000): Promise<string> {
+  async analyze(url: string, timeout = LIVE ? 240_000 : 120_000): Promise<string> {
     await this.enterUrl(url);
     await expect(this.analyzeButton).toBeEnabled();
     await this.analyzeButton.click();

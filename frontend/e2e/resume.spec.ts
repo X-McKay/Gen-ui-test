@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { HR_SCREENING } from "./fixtures/descriptions";
+import { LIVE } from "./fixtures/live";
 import { InterviewStepHelper, NewProjectPage } from "./pages";
 
 test.describe("resume", () => {
@@ -11,6 +12,8 @@ test.describe("resume", () => {
 
     // Step 1 → step 2.
     const { next } = await helper.answerCurrentStep();
+    // The live model may infer everything and finish in one step; then there is nothing to resume.
+    test.skip(LIVE && next.kind === "review", "the live model asked no further questions");
     expect(next.kind).toBe("step");
     if (next.kind !== "step") return;
     const stepBefore = next.step;

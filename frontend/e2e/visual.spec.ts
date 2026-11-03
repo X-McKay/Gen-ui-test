@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { FIXTURE_REPOSITORIES, HR_SCREENING, PROJECT_NAME, PROJECT_OWNER } from "./fixtures/descriptions";
+import { LIVE } from "./fixtures/live";
 import { readSeedState } from "./fixtures/state";
 import { ExistingProjectPage, LandingPage, NewProjectPage, ReviewPage } from "./pages";
 
@@ -23,6 +24,7 @@ test.describe("visual", () => {
       });
 
       test(`first interview step (${scheme})`, async ({ page }) => {
+        test.skip(LIVE, "the step intro is written by the model and varies between runs");
         const flow = new NewProjectPage(page);
         await flow.start({ description: HR_SCREENING, name: PROJECT_NAME, owner: PROJECT_OWNER });
         await flow.interview.settle();
@@ -33,6 +35,7 @@ test.describe("visual", () => {
       });
 
       test(`findings table (${scheme})`, async ({ page }) => {
+        test.skip(LIVE, "the step intro is written by the model and varies between runs");
         const flow = new ExistingProjectPage(page);
         await flow.goto();
         await flow.analyze(FIXTURE_REPOSITORIES.hrScreening);

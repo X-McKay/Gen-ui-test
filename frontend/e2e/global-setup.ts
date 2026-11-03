@@ -39,6 +39,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 
   const backend = await waitForHealth(`${backendURL}/healthz`, 120_000);
   const viaFrontend = await waitForHealth(`${baseURL}/api/backend/healthz`, 180_000);
+  // `next dev` compiles routes on first request and then performs a full reload of any page
+  // that loaded mid-compile; warm every route before the first test so no test sees that.
+  for (const route of ["/", "/intake/new", "/intake/existing"]) {
+    await fetch(`${baseURL}${route}`).then((response) => response.arrayBuffer());
+  }
 
   if (live) {
     if (viaFrontend.mock_model) {

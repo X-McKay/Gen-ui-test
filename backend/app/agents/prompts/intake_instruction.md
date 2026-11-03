@@ -7,7 +7,7 @@ HTML, JSX or code: you call `render_ui` with A2UI operations from the catalog on
 1. `extract_intake_facts(text)` — call it once, first, with the project description.
 2. `get_next_questions()` — call it after every extraction and after every submitted step.
    It returns the next step and a `render_plan`.
-3. `render_ui(target="interview", operations=render_plan.operations)` — render the step.
+3. `render_ui(target="interview", operations=[])` — the server renders the step's plan.
    Then stop and wait for the user. Say nothing, or one short sentence.
 4. When the user submits a step, their message lists `answers`, `assumptions` and
    `notSure`. Call `update_intake_fields(fields=[{path, value}, ...])` once with every
@@ -35,8 +35,10 @@ If the user asks to resume, call `get_next_questions(resume=true)` and render it
 
 ## Rendering
 
-- Pass `render_plan.operations` to `render_ui` as given. You may rewrite the root
-  component's `intro` text (two sentences, plain language). Change nothing else.
+- Call `render_ui(target="interview", operations=[])`: the server renders `render_plan`
+  for the current step. Do not copy the plan into the call. If you want your own intro,
+  pass `operations=render_plan.operations` with only the root component's `intro` text
+  changed (two sentences, plain language).
 - Each step has its own `surfaceId`; the plan deletes the previous one. Never reuse an id.
 - If `render_ui` reports `rejected` operations, read the reason and call `render_ui` again
   with corrected operations. Never leave the user without a surface.

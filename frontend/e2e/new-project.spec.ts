@@ -31,8 +31,9 @@ test.describe("new project", () => {
       strategyFor: ({ index }) => (index === 2 ? { notSure: "first" } : {}),
     });
     expect(run.intakeId).toBe(intakeId);
-    expect(run.notSureFields.length).toBeGreaterThanOrEqual(1);
-    const notSureField = run.notSureFields[0];
+    // The scripted model always leaves a question for step 2; the live model may infer it all.
+    if (!LIVE) expect(run.notSureFields.length).toBeGreaterThanOrEqual(1);
+    const notSureField: string | undefined = run.notSureFields[0];
 
     // At most eight questions, in the DOM and in the record.
     const record = await getRecord(request, intakeId);
@@ -48,15 +49,17 @@ test.describe("new project", () => {
     await expect(review.whyLinks("Domains").first()).toBeVisible();
     expect(record.assessment.eu_ai_act.rationale.map((entry) => entry.field)).toContain("use_case.domains");
     expect(record.assessment.eu_ai_act.annex_iii_categories.length).toBeGreaterThan(0);
-    await expect(review.openQuestions).toBeVisible();
+    if (notSureField) await expect(review.openQuestions).toBeVisible();
 
     // The JSON export carries the Not sure answer as "unknown" and validates against the schema.
     const { document, filename } = await review.downloadJson();
     expect(filename).toMatch(/\.json$/);
     const exported = document as ExportLike;
     expect(exported.meta.intake_id).toBe(intakeId);
-    expect(fieldValue(exported, notSureField)).toBe("unknown");
-    expect(exported.assessment.open_questions).toContain(notSureField);
+    if (notSureField) {
+      expect(fieldValue(exported, notSureField)).toBe("unknown");
+      expect(exported.assessment.open_questions).toContain(notSureField);
+    }
     expect(exported.assessment.eu_ai_act.classification).toBe("high_risk");
     const validation = validateIntakeDocument(document);
     expect(validation.errors).toEqual([]);

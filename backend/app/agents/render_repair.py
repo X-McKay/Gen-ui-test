@@ -72,7 +72,9 @@ def repair_operations(args: dict[str, Any], step: Step) -> dict[str, Any] | None
     operations = args.get("operations")
     if not isinstance(operations, list):
         return None
-    if step.surface_id not in _surface_ids(operations):
+    # Two shapes trigger the repair: the plan copied (perhaps imperfectly) for this step's
+    # surface, or the short form ``operations=[]`` that asks the server to render the plan.
+    if operations and step.surface_id not in _surface_ids(operations):
         return None
     planned = build_operations(step)
     intro = _model_intro(operations)
