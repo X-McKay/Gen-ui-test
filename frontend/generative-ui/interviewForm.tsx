@@ -5,16 +5,7 @@
  * components rendered into its slots. Questions register themselves; the step owns the
  * single confirm button and submits everything as one action.
  */
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 export const NOT_SURE = "unknown" as const;
 

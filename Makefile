@@ -27,21 +27,53 @@ PRETTIER_CONFIG := $(wildcard $(FRONTEND_DIR)/.prettierrc*) $(wildcard $(FRONTEN
 # Coverage: the rules engine must stay at 100 % (branch coverage on).
 GOVERNANCE_COV := --cov=app/governance --cov-report=term-missing --cov-fail-under=100
 
-.PHONY: help install dev dev-mock backend frontend lint format typecheck test test-backend \
-        test-frontend export-schema check-schema e2e e2e-live e2e-ui build docker-up \
-        docker-down clean
+.PHONY: help setup doctor install install-browsers dev dev-mock backend frontend lint format \
+        typecheck test test-backend test-frontend export-schema check-schema e2e e2e-live e2e-ui \
+        build docker-up docker-down clean
 
 help: ## Show this help (default)
 	@printf "\nAI Governance Intake — make targets\n\n"
 	@awk 'BEGIN {FS = ":.*## "} /^[a-zA-Z0-9_-]+:.*## / {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@printf "\nVariables: BACKEND_PORT=%s  BACKEND_URL=%s  PYTEST_ARGS=\"%s\"\n" "$(BACKEND_PORT)" "$(BACKEND_URL)" "$(PYTEST_ARGS)"
-	@printf "Copy .env.example to .env (backend) and frontend/.env.local before 'make dev'.\n\n"
+	@printf "First time here? 'make setup' installs everything, writes the env files and checks the host.\n\n"
 
 # ---- Setup ---------------------------------------------------------------------------------
 
-install: ## Install backend (uv, dev extras), frontend (pnpm) and Playwright browsers
+# Toolchain versions are pinned in .mise.toml (`mise install`) and mirrored in CI.
+
+setup: install ## First-time setup: install, create .env files from the examples, pre-commit hooks, doctor
+	@[ -f .env ] || { cp .env.example .env && printf "wrote .env from .env.example\n"; }
+	@[ -f $(FRONTEND_DIR)/.env.local ] || { printf 'BACKEND_URL=http://127.0.0.1:$(BACKEND_PORT)\n' > $(FRONTEND_DIR)/.env.local && printf "wrote frontend/.env.local\n"; }
+	@if command -v pre-commit >/dev/null 2>&1; then pre-commit install; \
+	elif command -v $(UV) >/dev/null 2>&1; then $(UV) tool run pre-commit install; \
+	else printf "pre-commit not installed; hooks skipped (uv tool install pre-commit)\n"; fi
+	@$(MAKE) --no-print-directory doctor
+
+doctor: ## Check the host: toolchain versions, WeasyPrint native libraries, free ports
+	@ok=1; \
+	for tool in git $(UV) $(PNPM) node; do \
+	  if command -v $$tool >/dev/null 2>&1; then printf "  ok   %-6s %s\n" "$$tool" "$$($$tool --version 2>/dev/null | head -1)"; \
+	  else printf "  MISSING %s (see .mise.toml)\n" "$$tool"; ok=0; fi; \
+	done; \
+	node_major=$$(node -v 2>/dev/null | sed 's/^v\([0-9]*\).*/\1/'); \
+	[ "$${node_major:-0}" -ge 22 ] || { printf "  WARN node 22+ required (found %s)\n" "$$(node -v 2>/dev/null)"; ok=0; }; \
+	if [ -d $(BACKEND_DIR)/.venv ]; then \
+	  if (cd $(BACKEND_DIR) && $(UV) run python -c "import weasyprint" >/dev/null 2>&1); then printf "  ok   weasyprint native libraries\n"; \
+	  else printf "  WARN WeasyPrint cannot load its native libraries; PDF export will fail (README > Running locally)\n"; fi; \
+	else printf "  --   backend/.venv missing; run make install\n"; fi; \
+	[ -f .env ] && printf "  ok   .env\n" || printf "  --   .env missing (make setup writes it)\n"; \
+	[ -f $(FRONTEND_DIR)/.env.local ] && printf "  ok   frontend/.env.local\n" || printf "  --   frontend/.env.local missing (make setup writes it)\n"; \
+	for port in $(BACKEND_PORT) 3000; do \
+	  if command -v ss >/dev/null 2>&1 && ss -ltn 2>/dev/null | grep -q ":$$port "; then printf "  WARN port %s is in use\n" "$$port"; fi; \
+	done; \
+	[ $$ok -eq 1 ] && printf "doctor: ready\n" || { printf "doctor: fix the items above\n"; exit 1; }
+
+install: ## Install backend (uv, dev extras), frontend (pnpm) and the chromium browser for Playwright
 	cd $(BACKEND_DIR) && $(UV) sync --extra dev
 	cd $(FRONTEND_DIR) && $(PNPM) install
+	cd $(FRONTEND_DIR) && $(PNPM) exec playwright install chromium
+
+install-browsers: ## Also install firefox and webkit (needed for the full `make e2e` matrix)
 	cd $(FRONTEND_DIR) && $(PNPM) exec playwright install chromium firefox webkit
 
 # ---- Run -----------------------------------------------------------------------------------
@@ -113,7 +145,7 @@ check-schema: ## Fail when the JSON schema or the generated TS types are stale
 
 # ---- End to end ----------------------------------------------------------------------------
 
-e2e: ## Playwright suite against the scripted model (MOCK_MODEL=1)
+e2e: ## Playwright suite against the scripted model (MOCK_MODEL=1); all four projects (make install-browsers first)
 	cd $(FRONTEND_DIR) && $(PNPM) exec playwright test $(PLAYWRIGHT_ARGS)
 
 e2e-live: ## Playwright suite against the live model endpoint (E2E_LIVE=1)

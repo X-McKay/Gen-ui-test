@@ -16,21 +16,21 @@ from app.settings import get_settings
 
 get_settings.cache_clear()
 
-FIXTURE_ROOT = Path(__file__).resolve().parents[1] / "fixtures" / "repos"
+FIXTURE_ROOT = Path(__file__).resolve().parents[2] / "fixtures" / "repos"
 HR_SCREENING_URL = "https://github.com/intake-fixtures/hr-screening"
 LOG_SEARCH_URL = "https://github.com/intake-fixtures/log-search"
 
 
 @pytest.fixture(scope="session", autouse=True)
 def isolated_database(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None]:
-    from app.intake import repository
+    from app.intake import intake_store
 
     database_path = tmp_path_factory.mktemp("db") / "intake-test.db"
-    repository.reset_engine(f"sqlite:///{database_path}")
+    intake_store.reset_engine(f"sqlite:///{database_path}")
     get_settings.cache_clear()
     assert get_settings().mock_model is True
     yield
-    repository.reset_engine()
+    intake_store.reset_engine()
 
 
 @pytest.fixture(scope="session")

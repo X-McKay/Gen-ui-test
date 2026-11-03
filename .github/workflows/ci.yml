@@ -122,6 +122,9 @@ jobs:
       - name: eslint
         run: pnpm lint
 
+      - name: prettier --check
+        run: pnpm format:check
+
       - name: tsc --noEmit
         run: pnpm typecheck
 

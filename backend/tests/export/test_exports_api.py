@@ -232,12 +232,12 @@ def test_submit_persists_through_real_mark_submitted(
     client: TestClient, stored_record: IntakeRecord, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """End to end against the isolated SQLite database: the row is written as submitted."""
-    from app.intake import repository
+    from app.intake import intake_store
 
     configure_webhook(monkeypatch, None)
     response = client.post("/intakes/t/submit")
     assert response.status_code == 200
-    loaded = repository.load_record("t")
+    loaded = intake_store.load_record("t")
     assert loaded is not None
     assert loaded.meta.status is IntakeStatus.SUBMITTED
     assert loaded.meta.submitted_at is not None

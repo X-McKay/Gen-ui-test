@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatValue, UNKNOWN_VALUE } from "@/lib/formatters";
-import { FIELD_SPECS_BY_PATH, type FieldSpec } from "@/lib/labels";
+import { FIELD_SPECS_BY_PATH, type FieldSpec } from "@/lib/fieldCatalog";
 import { cn } from "@/lib/utils";
 
 interface ReviewFieldRowProps {

@@ -32,7 +32,7 @@ from git import Git, GitCommandError
 
 from app.settings import get_settings
 
-FIXTURES_DIRECTORY = Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "repos"
+FIXTURES_DIRECTORY = Path(__file__).resolve().parents[2] / "fixtures" / "repos"
 
 #: Fixture URLs served from disk when ``MOCK_MODEL=1``. Keys are normalised URLs.
 FIXTURE_REPOSITORIES: dict[str, Path] = {

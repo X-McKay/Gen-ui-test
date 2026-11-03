@@ -180,7 +180,10 @@ function StepBody({
       data-testid="InterviewStep"
       data-section={section}
       aria-labelledby={headingId}
-      className={cn("surface-enter grid grid-cols-1 gap-6 rounded-[var(--radius)] border bg-card p-5 shadow-sm sm:p-6", submitting && "opacity-80")}
+      className={cn(
+        "surface-enter grid grid-cols-1 gap-6 rounded-[var(--radius)] border bg-card p-5 shadow-sm sm:p-6",
+        submitting && "opacity-80",
+      )}
       onSubmit={(event) => {
         event.preventDefault();
         if (complete && !submitting) submit();

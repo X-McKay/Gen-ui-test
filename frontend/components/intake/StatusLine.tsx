@@ -18,11 +18,7 @@ export function StatusLine({ text, busy, className }: StatusLineProps) {
       aria-atomic="true"
       data-testid="status-line"
       data-busy={busy ? "true" : "false"}
-      className={cn(
-        "flex min-h-6 items-center gap-2.5 text-sm text-muted-foreground",
-        !text && "invisible",
-        className,
-      )}
+      className={cn("flex min-h-6 items-center gap-2.5 text-sm text-muted-foreground", !text && "invisible", className)}
     >
       <span
         aria-hidden="true"

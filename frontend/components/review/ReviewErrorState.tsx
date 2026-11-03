@@ -37,8 +37,10 @@ export function ReviewErrorState({ kind, intakeId, detail, onRetry, retrying = f
           {notFound ? (
             <>
               Nothing is stored under{" "}
-              <code className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.8125rem] text-foreground">{intakeId}</code>.
-              The link may be out of date, or the intake was started on another server.
+              <code className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.8125rem] text-foreground">
+                {intakeId}
+              </code>
+              . The link may be out of date, or the intake was started on another server.
             </>
           ) : (
             <>The server did not answer. Check that the backend is running, then try again.</>

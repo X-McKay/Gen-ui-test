@@ -12,17 +12,17 @@ import pytest
 @pytest.fixture(autouse=True)
 def isolated_database(tmp_path: Path) -> Iterator[None]:
     from app import settings as settings_module
-    from app.intake import repository
+    from app.intake import intake_store
 
     previous = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = f"sqlite:///{tmp_path / 'intake.db'}"
     os.environ["MOCK_MODEL"] = "1"
     settings_module.get_settings.cache_clear()
-    repository.reset_engine()
+    intake_store.reset_engine()
     yield
     if previous is None:
         os.environ.pop("DATABASE_URL", None)
     else:
         os.environ["DATABASE_URL"] = previous
     settings_module.get_settings.cache_clear()
-    repository.reset_engine()
+    intake_store.reset_engine()

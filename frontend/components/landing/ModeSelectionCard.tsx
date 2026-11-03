@@ -16,14 +16,7 @@ interface ModeSelectionCardProps {
  * The whole card is one link. Hover and focus lift it and nudge the arrow;
  * both states are visible, and reduced motion drops the translate.
  */
-export function ModeSelectionCard({
-  href,
-  title,
-  description,
-  icon: Icon,
-  testId,
-  className,
-}: ModeSelectionCardProps) {
+export function ModeSelectionCard({ href, title, description, icon: Icon, testId, className }: ModeSelectionCardProps) {
   return (
     <Link
       href={href}

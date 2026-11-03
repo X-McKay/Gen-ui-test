@@ -3,16 +3,35 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 import { fieldValue, getRecord, sameAnswer } from "./fixtures/api";
 import { FIXTURE_REPOSITORIES, HR_SCREENING } from "./fixtures/descriptions";
 import { LIVE } from "./fixtures/live";
-import { ExistingProjectPage, type GivenAnswer, type InterviewStepHelper, NewProjectPage, type QuestionKind, type StepContext } from "./pages";
+import {
+  ExistingProjectPage,
+  type GivenAnswer,
+  type InterviewStepHelper,
+  NewProjectPage,
+  type QuestionKind,
+  type StepContext,
+} from "./pages";
 
 /** Chips that carry a single-choice editor in the HR scenario, most likely first. */
-const CHOICE_CHIP_CANDIDATES = ["project.lifecycle_stage", "ai_system.model_source", "project.target_users", "ai_system.autonomy_level"];
+const CHOICE_CHIP_CANDIDATES = [
+  "project.lifecycle_stage",
+  "ai_system.model_source",
+  "project.target_users",
+  "ai_system.autonomy_level",
+];
 
-async function expectRoundTrip(request: APIRequestContext, intakeId: string, answers: readonly GivenAnswer[]): Promise<void> {
+async function expectRoundTrip(
+  request: APIRequestContext,
+  intakeId: string,
+  answers: readonly GivenAnswer[],
+): Promise<void> {
   const record = await getRecord(request, intakeId);
   for (const answer of answers) {
     const stored = fieldValue(record, answer.field);
-    expect(sameAnswer(stored, answer.value), `${answer.field}: stored ${JSON.stringify(stored)}, given ${JSON.stringify(answer.value)}`).toBe(true);
+    expect(
+      sameAnswer(stored, answer.value),
+      `${answer.field}: stored ${JSON.stringify(stored)}, given ${JSON.stringify(answer.value)}`,
+    ).toBe(true);
   }
 }
 
@@ -44,7 +63,10 @@ async function checkConfirmGate(helper: InterviewStepHelper, context: StepContex
 }
 
 test.describe("interview controls", () => {
-  test("choice, yes/no and text questions round-trip, the confirm gate holds, and an edited chip is stored", async ({ page, request }) => {
+  test("choice, yes/no and text questions round-trip, the confirm gate holds, and an edited chip is stored", async ({
+    page,
+    request,
+  }) => {
     const flow = new NewProjectPage(page);
     const { intakeId } = await flow.start({ description: HR_SCREENING });
     const helper = flow.interview;

@@ -474,10 +474,9 @@ export const FIELD_OPTIONS: Readonly<Record<string, readonly OptionSpec[]>> = Ob
  * Option value → label, keyed by field path then value. Values are not globally unique
  * (`other`, `public`), so the lookup is always scoped to a field.
  */
-export const OPTION_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> =
-  Object.fromEntries(
-    FIELD_SPECS.map((s) => [s.field, Object.fromEntries(s.options.map((o) => [o.value, o.label]))]),
-  );
+export const OPTION_LABELS: Readonly<Record<string, Readonly<Record<string, string>>>> = Object.fromEntries(
+  FIELD_SPECS.map((s) => [s.field, Object.fromEntries(s.options.map((o) => [o.value, o.label]))]),
+);
 
 /** Section → its fields, in record order. */
 export const SECTION_FIELDS: Readonly<Record<SectionKey, readonly string[]>> = {
@@ -521,10 +520,8 @@ export type TierKey = keyof typeof TIER_LABELS;
 
 /** One plain-language sentence per tier, shown under the badge on the review page. */
 export const TIER_EXPLANATIONS: Record<TierKey, string> = {
-  prohibited:
-    "The described practice is banned under Article 5. It cannot be placed on the market or used in the EU.",
-  high_risk:
-    "Systems in this area are listed in Annex III. Provider and deployer obligations apply before deployment.",
+  prohibited: "The described practice is banned under Article 5. It cannot be placed on the market or used in the EU.",
+  high_risk: "Systems in this area are listed in Annex III. Provider and deployer obligations apply before deployment.",
   limited_transparency:
     "People must be told they are dealing with AI or AI-generated content under Article 50. No conformity assessment is required.",
   minimal: "No specific EU AI Act obligations apply. Voluntary codes of practice are encouraged.",

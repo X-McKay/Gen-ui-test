@@ -17,7 +17,11 @@ interface ExportLike {
 test.describe("new project", () => {
   test("HR screening: chips first, few questions, Not sure, high risk, valid exports", async ({ page, request }) => {
     const flow = new NewProjectPage(page);
-    const { intakeId, first } = await flow.start({ description: HR_SCREENING, name: PROJECT_NAME, owner: PROJECT_OWNER });
+    const { intakeId, first } = await flow.start({
+      description: HR_SCREENING,
+      name: PROJECT_NAME,
+      owner: PROJECT_OWNER,
+    });
     expect(first.kind).toBe("step");
 
     // Assumption chips are on screen before a single question has been answered.
@@ -72,7 +76,11 @@ test.describe("new project", () => {
 
   test("log search: at most four questions and a minimal classification", async ({ page, request }) => {
     const flow = new NewProjectPage(page);
-    const { intakeId } = await flow.start({ description: LOG_SEARCH, name: "Log search assistant", owner: PROJECT_OWNER });
+    const { intakeId } = await flow.start({
+      description: LOG_SEARCH,
+      name: "Log search assistant",
+      owner: PROJECT_OWNER,
+    });
     const run = await flow.completeInterview();
     const record = await getRecord(request, intakeId);
     expect(run.questionsAnswered).toBeLessThanOrEqual(BOUNDS.logMaxQuestions);

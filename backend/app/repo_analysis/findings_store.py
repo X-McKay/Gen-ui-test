@@ -8,7 +8,7 @@ from pydantic import TypeAdapter
 from sqlalchemy import Engine
 from sqlmodel import Field, SQLModel
 
-from app.intake.repository import get_engine, session_scope
+from app.intake.intake_store import get_engine, session_scope
 from app.repo_analysis.summarize_findings import RepositoryFinding
 
 

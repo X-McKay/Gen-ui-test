@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 
 from app.agents.intake_agent import create_adk_agent
 from app.api import health, intakes
-from app.intake.repository import get_engine
+from app.intake.intake_store import get_engine
 from app.logging_config import configure_logging, request_id_middleware
 from app.settings import Settings, get_settings
 

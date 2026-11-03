@@ -46,7 +46,10 @@ export function ReviewHeader({ record }: ReviewHeaderProps) {
         )}
         <span className="inline-flex min-h-11 items-center gap-1.5">
           <span>Intake</span>
-          <code className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.8125rem] text-foreground" data-testid="intake-id">
+          <code
+            className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.8125rem] text-foreground"
+            data-testid="intake-id"
+          >
             {record.meta.intake_id}
           </code>
         </span>

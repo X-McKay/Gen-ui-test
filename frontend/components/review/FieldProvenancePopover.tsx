@@ -76,9 +76,7 @@ export function FieldProvenancePopover({
             {repoPath ? (
               <span className="min-w-0">
                 <span className="text-muted-foreground">Repository </span>
-                <code className="rounded-sm bg-muted px-1 py-0.5 font-mono text-[0.8125rem] break-all">
-                  {repoPath}
-                </code>
+                <code className="rounded-sm bg-muted px-1 py-0.5 font-mono text-[0.8125rem] break-all">{repoPath}</code>
               </span>
             ) : (
               <span>{sourceText}</span>

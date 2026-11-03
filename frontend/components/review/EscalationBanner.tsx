@@ -12,8 +12,7 @@ export function EscalationBanner() {
       <div className="flex flex-col gap-1">
         <p className="text-base font-medium">This project describes a prohibited practice</p>
         <p className="measure text-sm text-pretty">
-          Contact the AI governance team before any further work. Answers are locked; you can still download the
-          record.
+          Contact the AI governance team before any further work. Answers are locked; you can still download the record.
         </p>
       </div>
     </div>

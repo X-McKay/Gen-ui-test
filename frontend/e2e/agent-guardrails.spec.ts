@@ -17,7 +17,11 @@ test.describe("agent guardrails", () => {
   test("a component outside the catalog never renders; the surface self-corrects", async ({ page }) => {
     await watchDom(page);
     const flow = new NewProjectPage(page);
-    await flow.start({ description: `${HR_SCREENING} ${INVALID_COMPONENT_MARKER}`, name: PROJECT_NAME, owner: PROJECT_OWNER });
+    await flow.start({
+      description: `${HR_SCREENING} ${INVALID_COMPONENT_MARKER}`,
+      name: PROJECT_NAME,
+      owner: PROJECT_OWNER,
+    });
 
     // A valid step is on screen (the agent's second attempt).
     await expect(flow.interview.step).toBeVisible();

@@ -28,7 +28,11 @@ export function EscalationNotice({ title, reasons, contact, onAcknowledge }: Esc
       }}
     >
       <div className="flex items-start gap-3">
-        <OctagonAlert className="mt-0.5 size-6 shrink-0" style={{ color: "var(--tier-prohibited, #b42318)" }} aria-hidden="true" />
+        <OctagonAlert
+          className="mt-0.5 size-6 shrink-0"
+          style={{ color: "var(--tier-prohibited, #b42318)" }}
+          aria-hidden="true"
+        />
         <div className="grid gap-1">
           <h2 className="text-lg font-semibold">{title}</h2>
           <p className="text-sm text-muted-foreground max-w-[70ch]">

@@ -15,7 +15,7 @@ from app.agents.surface_plan import (
     invalid_operations_fixture,
 )
 from app.agents.tools.context import load_intake, load_step, publish_state, tool_error
-from app.intake import repository
+from app.intake import intake_store
 from app.intake.record_service import IntakeNotFoundError
 from app.intake.schema import IntakeRecord, IntakeStatus
 
@@ -80,7 +80,7 @@ def get_next_questions(tool_context: ToolContext, resume: bool = False) -> dict[
             record.meta.question_count += len(step.questions)
     if step.kind == "escalation":
         record.meta.status = IntakeStatus.ESCALATED
-    repository.save_record(record, current_step=step.model_dump(mode="json"))
+    intake_store.save_record(record, current_step=step.model_dump(mode="json"))
     publish_state(
         tool_context,
         record,

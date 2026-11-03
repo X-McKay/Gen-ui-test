@@ -4,23 +4,14 @@ import { useGenerativeUIAccessibility } from "@copilotkit/react-core/v2/generati
 import { Check, Info, Pencil } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { ConfidenceMeter } from "@/components/intake/ConfidenceMeter";
+import { FieldProvenancePopover } from "@/components/review/FieldProvenancePopover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FieldProvenancePopover } from "@/components/review/FieldProvenancePopover";
+import { controlFor, labelFor, optionsFor } from "@/generative-ui/fieldDisplay";
 import { NOT_SURE, useInterviewForm } from "@/generative-ui/interviewForm";
-import { FIELD_CONTROLS, FIELD_OPTIONS } from "@/lib/labels";
 import { cn } from "@/lib/utils";
 
-import type { ChoiceOption } from "./ChoiceQuestion";
-
-function controlFor(field: string): "choice" | "multi" | "yes_no" | "text" {
-  return FIELD_CONTROLS[field] ?? "text";
-}
-
-function optionsFor(field: string): ChoiceOption[] {
-  return (FIELD_OPTIONS[field] ?? []).map((option) => ({ value: option.value, label: option.label }));
-}
-import { ConfidenceDots } from "./ConfidenceDots";
 import { SegmentedChoice } from "./QuestionShell";
 
 export interface AssumptionItem {
@@ -36,16 +27,6 @@ export interface AssumptionItem {
 export interface AssumptionReviewProps {
   title?: string;
   assumptions: AssumptionItem[];
-}
-
-function labelFor(item: AssumptionItem, value: unknown): string {
-  if (JSON.stringify(value) === JSON.stringify(item.value) && item.displayValue) return item.displayValue;
-  if (value === NOT_SURE) return "Not sure";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  const labels = new Map(optionsFor(item.field).map((option) => [option.value, option.label]));
-  if (Array.isArray(value)) return value.length ? value.map((v) => labels.get(String(v)) ?? String(v)).join(", ") : "None";
-  if (value === undefined || value === null) return "—";
-  return labels.get(String(value)) ?? String(value);
 }
 
 /** One editable chip: value, confidence, provenance, confirm and edit. */
@@ -143,7 +124,7 @@ function Chip({ item }: { item: AssumptionItem }) {
             <span className="min-w-0 truncate font-medium text-foreground" title={labelFor(item, value)}>
               {labelFor(item, value)}
             </span>
-            <ConfidenceDots confidence={item.confidence} className="shrink-0" />
+            <ConfidenceMeter confidence={item.confidence} className="shrink-0" />
             <Info className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span className="sr-only">, show provenance</span>
           </button>
@@ -195,7 +176,9 @@ export function AssumptionReview({ title = "What we understood", assumptions }: 
     <section {...accessibility} data-testid="AssumptionReview" aria-label={title} className="grid gap-3">
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h2>
-        <p className="text-xs text-muted-foreground">Confirming the step confirms every chip. Edit anything that is off.</p>
+        <p className="text-xs text-muted-foreground">
+          Confirming the step confirms every chip. Edit anything that is off.
+        </p>
       </div>
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2" role="list">
         {assumptions.map((item) => (

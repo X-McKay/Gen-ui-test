@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 
 import type { SectionProgressDto } from "@/lib/apiClient";
-import { SECTION_LABELS, SECTION_ORDER, type SectionKey } from "@/lib/labels";
+import { SECTION_LABELS, SECTION_ORDER, type SectionKey } from "@/lib/fieldCatalog";
 import { cn } from "@/lib/utils";
 
 interface ProgressRailProps {

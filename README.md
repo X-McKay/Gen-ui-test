@@ -9,7 +9,7 @@ and a classification produced by a deterministic rules engine: EU AI Act first, 
 NIST AI RMF, ISO/IEC 42001 and an internal-policy module plugged in behind it. Typical
 intakes finish in 4–8 questions; high-risk ones in at most 15.
 
-See [DEMO.md](DEMO.md) for a screenshot walkthrough and [PLAN.md](PLAN.md) for the design
+See [docs/DEMO.md](docs/DEMO.md) for a screenshot walkthrough and [docs/PLAN.md](docs/PLAN.md) for the design
 decisions and library verification.
 
 ## Architecture
@@ -84,15 +84,24 @@ Prerequisites: Python 3.12, [uv](https://docs.astral.sh/uv/), Node 22, pnpm 11 (
 the Dockerfile and CI install them.
 
 ```sh
-make install        # uv sync --extra dev · pnpm install · playwright install chromium firefox webkit
-cp .env.example .env                 # backend settings (read from the backend working dir)
-printf 'BACKEND_URL=http://127.0.0.1:8000\n' > frontend/.env.local
+mise install        # optional: python 3.12, uv, node 22, pnpm 11 from .mise.toml
+make setup          # uv sync · pnpm install · playwright chromium · .env + frontend/.env.local · pre-commit · doctor
+make doctor         # re-check the host any time (toolchain, WeasyPrint libraries, ports)
 
 make dev            # backend :8000 (uvicorn --reload) + frontend :3000, live model endpoint
 make dev-mock       # same with MOCK_MODEL=1: deterministic, offline
 make backend        # or run either side alone
 make frontend
+make install-browsers   # firefox + webkit, only for the full `make e2e` matrix
 ```
+
+`make setup` is idempotent: it never overwrites an existing `.env` or `frontend/.env.local`.
+The pre-commit hooks (`.pre-commit-config.yaml`) run the project's own ruff, mypy, prettier,
+eslint and schema check on the files you commit, and refuse `.env`, `*.db` and
+`.playwright-mcp/`. Working with Claude Code? `CLAUDE.md` holds the invariants, `.claude/skills/`
+the `/add-question`, `/add-framework`, `/verify` and `/e2e-debug` skills, and
+`docs/claude-code-settings.json` the recommended hooks and permission allowlist to copy into
+`.claude/settings.json`.
 
 `make dev` runs both servers in one terminal with a POSIX trap: Ctrl-C stops both, and if
 either exits the other is stopped too (make prints `Terminated`; that is the trap, not an
@@ -158,15 +167,15 @@ extraction in `structured_extraction.py` (no JSON mode, so it works on vLLM).
 | Layer | Command | What it covers |
 | --- | --- | --- |
 | Backend unit + contract | `make test-backend` | pytest over `backend/tests` (schema, question bank, gap analysis, record service, tools, API routes, exports, repository analysis). Fails below **100 % branch coverage on `app/governance`** (`--cov=app/governance --cov-fail-under=100`). |
-| Frontend unit | `make test-frontend` | vitest over `frontend/__tests__` (formatters, catalog schemas, …); `--passWithNoTests` keeps it green on a fresh checkout. |
+| Frontend unit | `make test-frontend` | vitest over `frontend/**/*.test.{ts,tsx}`, beside their subjects (formatters, field catalog, catalog schemas, …); `--passWithNoTests` keeps it green on a fresh checkout. |
 | Both | `make test` | |
-| Static checks | `make lint`, `make typecheck` | ruff format/check, eslint (prettier only when a config file exists); mypy `--strict`, `tsc --noEmit`. |
+| Static checks | `make lint`, `make typecheck` | ruff format/check, eslint, prettier `--check` (`frontend/.prettierrc`, print width 120); mypy `--strict`, `tsc --noEmit`. `make format` fixes what it can. |
 | Schema contract | `make check-schema` | `schema/intake.schema.json` must match the Pydantic model and `frontend/lib/intakeTypes.ts` must match the schema. `make export-schema` regenerates both. |
 | End to end, mock | `make e2e` | Playwright on chromium, firefox, webkit and Pixel 7; `playwright.config.ts` starts both servers with `MOCK_MODEL=1`. Specs in `frontend/e2e/`. |
 | End to end, live | `make e2e-live` | Same specs with `E2E_LIVE=1` against the real endpoint; counts relax to the plan's bounds. |
 | Interactive | `make e2e-ui` | Playwright UI mode. Set `E2E_EXTERNAL_SERVERS=1` to reuse already-running servers. |
 
-CI (`.github/workflows/ci.yml`) runs `backend`, `schema` and `frontend` on every pull request
+Locally the same checks run as pre-commit hooks after `make setup`. CI (`.github/workflows/ci.yml`) runs `backend`, `schema` and `frontend` on every pull request
 and push to `main`, then `e2e-mock` with all three browsers and uploads the Playwright report
 and traces on failure. `.github/workflows/e2e-live.yml` runs the chromium suite against the
 live endpoint nightly at 03:00 UTC and on demand, reading the key from the
@@ -252,7 +261,7 @@ Project section, asked only when the project uses AI.
    and `frontend/lib/intakeTypes.ts`. Commit both; `make check-schema` (and CI) fail
    otherwise.
 
-4. **Frontend label.** Add the matching entry to `FIELD_SPECS` in `frontend/lib/labels.ts`
+4. **Frontend label.** Add the matching entry to `FIELD_SPECS` in `frontend/lib/fieldCatalog.ts`
    so chips, the progress rail and the review page know the field:
 
    ```ts
@@ -390,7 +399,7 @@ obligations, next steps, extra framework names and a tier floor; they never pers
   `INTAKE_WEBHOOK_URL` through `app/export/webhook.py`; replace the delivery function to
   integrate a ticketing system.
 - **Postgres**: set `DATABASE_URL=postgresql+psycopg://…` and add the driver to
-  `backend/pyproject.toml`; persistence is SQLModel in `app/intake/repository.py`.
+  `backend/pyproject.toml`; persistence is SQLModel in `app/intake/intake_store.py`.
 - **Additional repository hosts**: extend `REPO_ALLOWED_HOSTS`; for a host with a different
   URL shape adjust `validate_repository_url` in `app/repo_analysis/clone_repository.py`.
   Fixture repositories for offline runs are listed in `FIXTURE_REPOSITORIES`.

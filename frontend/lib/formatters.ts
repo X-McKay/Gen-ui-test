@@ -1,4 +1,4 @@
-import { fieldLabel, FIELD_CONTROLS, optionLabel } from "@/lib/labels";
+import { fieldLabel, FIELD_CONTROLS, optionLabel } from "@/lib/fieldCatalog";
 
 /** `0.92` → `"92%"`. Values outside 0–1 are clamped. */
 export function formatConfidence(confidence: number): string {

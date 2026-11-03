@@ -17,7 +17,9 @@ type ComponentName = (typeof EXPECTED_COMPONENTS)[number];
 
 /** The Standard Schema surface every props schema exposes (zod 4 implements it). */
 interface StandardSchemaLike {
-  "~standard": { validate: (input: unknown) => { issues?: readonly unknown[] } | Promise<{ issues?: readonly unknown[] }> };
+  "~standard": {
+    validate: (input: unknown) => { issues?: readonly unknown[] } | Promise<{ issues?: readonly unknown[] }>;
+  };
 }
 
 async function validate(name: ComponentName, input: unknown): Promise<boolean> {
@@ -54,11 +56,21 @@ describe("intake catalog", () => {
   });
 
   it("AssumptionReview and FindingsReview check the field path of every item", async () => {
-    const chip = { label: "Lifecycle stage", value: "pilot", displayValue: "Pilot", confidence: 0.8, source: "inferred" };
-    expect(await validate("AssumptionReview", { assumptions: [{ ...chip, field: "project.lifecycle_stage" }] })).toBe(true);
+    const chip = {
+      label: "Lifecycle stage",
+      value: "pilot",
+      displayValue: "Pilot",
+      confidence: 0.8,
+      source: "inferred",
+    };
+    expect(await validate("AssumptionReview", { assumptions: [{ ...chip, field: "project.lifecycle_stage" }] })).toBe(
+      true,
+    );
     expect(await validate("AssumptionReview", { assumptions: [{ ...chip, field: "marketing.budget" }] })).toBe(false);
     const finding = { ...chip, evidencePath: "README.md", snippet: "Pilot with two teams" };
-    expect(await validate("FindingsReview", { findings: [{ ...finding, field: "project.lifecycle_stage" }] })).toBe(true);
+    expect(await validate("FindingsReview", { findings: [{ ...finding, field: "project.lifecycle_stage" }] })).toBe(
+      true,
+    );
     expect(await validate("FindingsReview", { findings: [{ ...finding, field: "not-a-path" }] })).toBe(false);
   });
 
@@ -66,14 +78,30 @@ describe("intake catalog", () => {
     expect(await validate("InterviewStep", { intro: "Here is what we understood.", section: "project" })).toBe(true);
     expect(await validate("InterviewStep", { intro: "", section: "project" })).toBe(false);
     expect(await validate("InterviewStep", { intro: "Hello.", section: "marketing" })).toBe(false);
-    expect(await validate("EscalationNotice", { title: "Stop", reasons: ["Social scoring"], contact: "governance@example.com" })).toBe(true);
-    expect(await validate("EscalationNotice", { title: "Stop", reasons: "Social scoring", contact: "governance@example.com" })).toBe(false);
+    expect(
+      await validate("EscalationNotice", {
+        title: "Stop",
+        reasons: ["Social scoring"],
+        contact: "governance@example.com",
+      }),
+    ).toBe(true);
+    expect(
+      await validate("EscalationNotice", {
+        title: "Stop",
+        reasons: "Social scoring",
+        contact: "governance@example.com",
+      }),
+    ).toBe(false);
   });
 
   it("limits the question controls to the declared option counts", async () => {
     const one = [{ value: "a", label: "A" }];
-    expect(await validate("ChoiceQuestion", { field: "project.target_users", prompt: "Who will use it?", options: one })).toBe(false);
+    expect(
+      await validate("ChoiceQuestion", { field: "project.target_users", prompt: "Who will use it?", options: one }),
+    ).toBe(false);
     const many = Array.from({ length: 15 }, (_, index) => ({ value: `v${index}`, label: `V${index}` }));
-    expect(await validate("MultiSelectQuestion", { field: "use_case.domains", prompt: "Which areas?", options: many })).toBe(false);
+    expect(
+      await validate("MultiSelectQuestion", { field: "use_case.domains", prompt: "Which areas?", options: many }),
+    ).toBe(false);
   });
 });

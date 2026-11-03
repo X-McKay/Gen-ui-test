@@ -109,7 +109,8 @@ export const intakeUI = createGenerativeUI({
     },
     ShortTextQuestion: {
       component: ShortTextQuestion,
-      description: "A short free-text answer, only when options cannot be enumerated. Client-side checks run in the browser.",
+      description:
+        "A short free-text answer, only when options cannot be enumerated. Client-side checks run in the browser.",
       props: z.object({
         field: fieldPath,
         prompt: questionPrompt,
@@ -129,7 +130,8 @@ export const intakeUI = createGenerativeUI({
     },
     FindingsReview: {
       component: FindingsReview,
-      description: "Repository findings as a table: field, inferred value, evidence path and snippet, confidence. The user confirms all or corrects rows inline.",
+      description:
+        "Repository findings as a table: field, inferred value, evidence path and snippet, confidence. The user confirms all or corrects rows inline.",
       props: z.object({
         title: z.string().max(80).optional(),
         findings: z

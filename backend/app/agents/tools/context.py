@@ -9,7 +9,7 @@ from ag_ui_adk import CONTEXT_STATE_KEY
 from google.adk.tools.tool_context import ToolContext
 
 from app.agents.surface_plan import Step
-from app.intake import repository
+from app.intake import intake_store
 from app.intake.record_service import IntakeNotFoundError, get_record
 from app.intake.schema import IntakeRecord
 
@@ -49,7 +49,7 @@ def load_intake(tool_context: ToolContext) -> IntakeRecord:
 
 
 def load_step(intake_id: str) -> Step | None:
-    raw = repository.load_current_step(intake_id)
+    raw = intake_store.load_current_step(intake_id)
     if raw is None:
         return None
     return Step.model_validate(raw)

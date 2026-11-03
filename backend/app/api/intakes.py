@@ -7,12 +7,11 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.intake import repository
+from app.intake import intake_store, record_service
 from app.intake.record_service import (
     FieldUpdate,
     IntakeNotFoundError,
     apply_updates,
-    create_intake,
     get_record,
 )
 from app.intake.schema import IntakeMode, IntakeRecord
@@ -65,9 +64,9 @@ async def intake_defaults(request: Request) -> dict[str, str | None]:
 
 
 @router.post("/intakes", status_code=201)
-async def create(body: CreateIntakeRequest, request: Request) -> IntakeRecord:
+async def create_intake(body: CreateIntakeRequest, request: Request) -> IntakeRecord:
     owner = body.owner or owner_from_request(request)
-    record = create_intake(body.mode, owner=None, repo_url=body.repo_url)
+    record = record_service.create_intake(body.mode, owner=None, repo_url=body.repo_url)
     updates: list[FieldUpdate] = []
     if owner:
         updates.append(
@@ -89,12 +88,12 @@ async def create(body: CreateIntakeRequest, request: Request) -> IntakeRecord:
 
 
 @router.get("/intakes/{intake_id}")
-async def read(intake_id: str) -> IntakeResponse:
+async def get_intake(intake_id: str) -> IntakeResponse:
     try:
         record = get_record(intake_id)
     except IntakeNotFoundError:
         raise HTTPException(status_code=404, detail="Intake not found") from None
-    return IntakeResponse(record=record, current_step=repository.load_current_step(intake_id))
+    return IntakeResponse(record=record, current_step=intake_store.load_current_step(intake_id))
 
 
 @router.patch("/intakes/{intake_id}/fields")

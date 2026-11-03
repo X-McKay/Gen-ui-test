@@ -55,7 +55,9 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       throw new Error(`Live model check failed: ${JSON.stringify(refreshed.model)}`);
     }
   } else if (!backend.mock_model) {
-    console.warn("[e2e] MOCK_MODEL is off; the mock suite expects deterministic answers. Set E2E_LIVE=1 for a live run.");
+    console.warn(
+      "[e2e] MOCK_MODEL is off; the mock suite expects deterministic answers. Set E2E_LIVE=1 for a live run.",
+    );
   }
 
   // A record for the review / visual / accessibility specs. The review page renders any

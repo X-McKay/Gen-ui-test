@@ -49,7 +49,11 @@ export function MultiSelectQuestion({
         testId="MultiSelectQuestion"
         notSure={notSure}
         onNotSure={() => setValue(notSure ? undefined : NOT_SURE)}
-        hint={value === undefined && suggested && suggested.length > 0 ? "Our best guess is preselected. Change it if needed." : "Select all that apply."}
+        hint={
+          value === undefined && suggested && suggested.length > 0
+            ? "Our best guess is preselected. Change it if needed."
+            : "Select all that apply."
+        }
       >
         <SegmentedChoice
           multiple

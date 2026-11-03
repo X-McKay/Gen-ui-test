@@ -4,6 +4,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useId, useState } from "react";
 
+import { RESUME_MESSAGE, START_MESSAGE } from "@/components/intake/agentMessages";
 import { IntakeAgentProvider } from "@/components/intake/IntakeAgentProvider";
 import { IntakeSurface } from "@/components/intake/IntakeSurface";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, apiClient } from "@/lib/apiClient";
-import { RESUME_MESSAGE, START_MESSAGE } from "@/lib/intakeState";
 
 const PLACEHOLDER =
   "An internal tool that drafts job-candidate summaries from CVs using an LLM via the OpenAI API. Recruiters read the summaries before deciding who to interview…";
@@ -93,11 +93,25 @@ function DescribeForm({ onCreated }: { onCreated: (intakeId: string) => void }) 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor={nameId}>Project name (optional)</Label>
-          <Input id={nameId} data-testid="project-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={200} autoComplete="off" />
+          <Input
+            id={nameId}
+            data-testid="project-name"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            maxLength={200}
+            autoComplete="off"
+          />
         </div>
         <div className="grid gap-2">
           <Label htmlFor={ownerId}>Owner (optional)</Label>
-          <Input id={ownerId} data-testid="project-owner" value={owner} onChange={(event) => setOwner(event.target.value)} maxLength={200} autoComplete="off" />
+          <Input
+            id={ownerId}
+            data-testid="project-owner"
+            value={owner}
+            onChange={(event) => setOwner(event.target.value)}
+            maxLength={200}
+            autoComplete="off"
+          />
         </div>
       </div>
       {error ? (
@@ -108,7 +122,11 @@ function DescribeForm({ onCreated }: { onCreated: (intakeId: string) => void }) 
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <p className="text-xs text-muted-foreground">Nothing is shared outside your organisation.</p>
         <Button type="submit" className="h-11 min-w-36 gap-2" disabled={tooShort || busy} data-testid="analyze">
-          {busy ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Sparkles className="size-4" aria-hidden="true" />}
+          {busy ? (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Sparkles className="size-4" aria-hidden="true" />
+          )}
           Analyze
         </Button>
       </div>

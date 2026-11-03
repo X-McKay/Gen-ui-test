@@ -1,4 +1,4 @@
-import { TIER_LABELS, type TierKey } from "@/lib/labels";
+import { TIER_LABELS, type TierKey } from "@/lib/fieldCatalog";
 import { cn } from "@/lib/utils";
 
 interface TierBadgeProps {

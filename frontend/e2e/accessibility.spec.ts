@@ -17,10 +17,19 @@ async function expectNoSeriousViolations(page: Page, testInfo: TestInfo, name: s
   let builder = new AxeBuilder({ page });
   for (const selector of DEV_ONLY_WIDGETS) builder = builder.exclude(selector);
   const results = await builder.analyze();
-  await testInfo.attach(`axe-${name}`, { body: JSON.stringify(results.violations, null, 2), contentType: "application/json" });
+  await testInfo.attach(`axe-${name}`, {
+    body: JSON.stringify(results.violations, null, 2),
+    contentType: "application/json",
+  });
   const serious = results.violations
     .filter((violation) => violation.impact === "critical" || violation.impact === "serious")
-    .map((violation) => `${violation.id} (${violation.impact}): ${violation.help} → ${violation.nodes.slice(0, 3).map((node) => node.target.join(" ")).join(", ")}`);
+    .map(
+      (violation) =>
+        `${violation.id} (${violation.impact}): ${violation.help} → ${violation.nodes
+          .slice(0, 3)
+          .map((node) => node.target.join(" "))
+          .join(", ")}`,
+    );
   expect(serious).toEqual([]);
 }
 

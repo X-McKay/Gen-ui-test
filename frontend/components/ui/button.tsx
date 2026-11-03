@@ -10,12 +10,10 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary text-primary-foreground shadow-1 hover:bg-[color-mix(in_oklch,var(--primary),black_8%)] dark:hover:bg-[color-mix(in_oklch,var(--primary),white_8%)]",
-        outline:
-          "border-border bg-card text-foreground shadow-1 hover:bg-muted aria-expanded:bg-muted",
+        outline: "border-border bg-card text-foreground shadow-1 hover:bg-muted aria-expanded:bg-muted",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-[color-mix(in_oklch,var(--secondary),var(--foreground)_6%)] aria-expanded:bg-secondary",
-        ghost:
-          "text-foreground hover:bg-muted aria-expanded:bg-muted dark:hover:bg-muted/70",
+        ghost: "text-foreground hover:bg-muted aria-expanded:bg-muted dark:hover:bg-muted/70",
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:outline-destructive dark:bg-destructive/15 dark:hover:bg-destructive/25",
         accent:
@@ -46,13 +44,7 @@ function Button({
   size = "default",
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
-  return (
-    <ButtonPrimitive
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
-      {...props}
-    />
-  );
+  return <ButtonPrimitive data-slot="button" className={cn(buttonVariants({ variant, size, className }))} {...props} />;
 }
 
 export { Button, buttonVariants };

@@ -1,0 +1,14 @@
+# Generated
+lib/intakeTypes.ts
+next-env.d.ts
+tsconfig.tsbuildinfo
+pnpm-lock.yaml
+AGENTS.md
+
+# Build and test output
+.next/
+node_modules/
+out/
+playwright-report/
+test-results/
+e2e/**/*-snapshots/

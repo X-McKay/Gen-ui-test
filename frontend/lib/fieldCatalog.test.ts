@@ -14,7 +14,7 @@ import {
   SECTION_ORDER,
   sectionOf,
   TIER_LABELS,
-} from "@/lib/labels";
+} from "@/lib/fieldCatalog";
 
 /** `backend/app/intake/question_bank.py`, QUESTION_BANK order. Keep in sync. */
 const QUESTION_BANK_ORDER = [

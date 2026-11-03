@@ -21,8 +21,8 @@ export default function Home() {
           Bring a project into AI governance
         </h1>
         <p className="mt-4 max-w-[48ch] text-center text-base text-muted-foreground text-pretty md:text-[1.0625rem] md:leading-7">
-          Describe it or point us at the repository. We infer what we can, confirm it with you, and
-          classify it in minutes.
+          Describe it or point us at the repository. We infer what we can, confirm it with you, and classify it in
+          minutes.
         </p>
 
         <nav aria-label="Choose how to start" className="mt-10 w-full md:mt-14">

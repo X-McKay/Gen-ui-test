@@ -41,7 +41,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Application code, the schema exporter and the fixture repositories used by MOCK_MODEL=1.
 COPY app ./app
 COPY scripts ./scripts
-COPY tests/fixtures ./tests/fixtures
+COPY fixtures ./fixtures
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 

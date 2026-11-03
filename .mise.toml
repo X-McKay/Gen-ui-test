@@ -1,0 +1,7 @@
+# Toolchain pins for the whole repository (https://mise.jdx.dev). `mise install` provides
+# every runtime `make setup` needs; CI pins the same versions in .github/workflows/ci.yml.
+[tools]
+python = "3.12"
+uv = "latest"
+node = "22"
+pnpm = "11.21.0"

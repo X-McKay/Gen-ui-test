@@ -13,15 +13,18 @@ dependencies = [
     "ag-ui-adk>=0.12.0",
     "ag-ui-protocol>=1.0.0",
     "litellm>=1.106.0",
+    # Not imported by the app: LiteLLM imports it lazily inside its chat-completion path, so
+    # every live model call fails with "No module named 'mcp'" without it (the mock model never
+    # touches LiteLLM, so only the live e2e suite notices).
+    "mcp>=2.3.0",
     "gitpython>=3.2.1",
     "jinja2>=3.1",
     "weasyprint>=70.0",
     "httpx>=0.28",
     "python-json-logger>=3.2",
-    "slowapi>=0.1.9",
     "sse-starlette>=2.2",
+    # Not imported by the app: LiteLLM needs it at runtime when INFERENCE_PROVIDER=bedrock.
     "boto3>=1.35",
-    "mcp>=2.3.0",
 ]
 
 [project.optional-dependencies]
@@ -31,7 +34,6 @@ dev = [
     "pytest-cov>=7.0",
     "ruff>=0.17",
     "mypy>=1.14",
-    "types-PyYAML",
     "respx>=0.22",
     "jsonschema>=4.26.0",
 ]
@@ -59,7 +61,7 @@ plugins = ["pydantic.mypy"]
 exclude = ["tests/"]
 
 [[tool.mypy.overrides]]
-module = ["ag_ui_adk.*", "google.adk.*", "google.genai.*", "litellm.*", "git.*", "weasyprint.*", "slowapi.*", "sse_starlette.*", "jsonpatch.*", "boto3.*", "pythonjsonlogger.*"]
+module = ["ag_ui_adk.*", "google.adk.*", "google.genai.*", "litellm.*", "git.*", "weasyprint.*", "sse_starlette.*", "boto3.*", "pythonjsonlogger.*"]
 ignore_missing_imports = true
 follow_untyped_imports = true
 

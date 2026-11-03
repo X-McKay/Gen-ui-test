@@ -21,6 +21,8 @@ function validator(): ReturnType<Ajv2020["compile"]> {
 export function validateIntakeDocument(document: unknown): { valid: boolean; errors: string[] } {
   const validate = validator();
   const valid = validate(document) === true;
-  const errors = (validate.errors ?? []).map((error) => `${error.instancePath || "/"} ${error.message ?? ""} ${JSON.stringify(error.params)}`);
+  const errors = (validate.errors ?? []).map(
+    (error) => `${error.instancePath || "/"} ${error.message ?? ""} ${JSON.stringify(error.params)}`,
+  );
   return { valid, errors };
 }

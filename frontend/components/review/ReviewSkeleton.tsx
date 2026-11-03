@@ -3,7 +3,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 /** Matches the review layout: header strip, four record sections, sticky summary. */
 export function ReviewSkeleton() {
   return (
-    <div className="flex flex-col gap-8" aria-busy="true" aria-label="Loading intake" role="status" data-testid="review-skeleton">
+    <div
+      className="flex flex-col gap-8"
+      aria-busy="true"
+      aria-label="Loading intake"
+      role="status"
+      data-testid="review-skeleton"
+    >
       <span className="sr-only">Loading intake</span>
       <div className="flex flex-col gap-3">
         <Skeleton className="h-4 w-40" />

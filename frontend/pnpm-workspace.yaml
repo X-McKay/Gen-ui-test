@@ -1,16 +1,15 @@
 allowBuilds:
-  '@scarf/scarf': false
+  "@scarf/scarf": false
   sharp: false
   unrs-resolver: false
 minimumReleaseAgeExclude:
-  - '@copilotkit/a2ui-renderer@1.84.0'
-  - '@copilotkit/core@1.84.0'
-  - '@copilotkit/learning@1.84.0'
-  - '@copilotkit/mcp-apps-renderer@1.84.0'
-  - '@copilotkit/react-core@1.84.0'
-  - '@copilotkit/runtime-client-gql@1.84.0'
-  - '@copilotkit/runtime@1.84.0'
-  - '@copilotkit/shared@1.84.0'
-  - '@copilotkit/web-components@1.84.0'
-  - '@copilotkit/web-inspector@1.84.0'
-
+  - "@copilotkit/a2ui-renderer@1.84.0"
+  - "@copilotkit/core@1.84.0"
+  - "@copilotkit/learning@1.84.0"
+  - "@copilotkit/mcp-apps-renderer@1.84.0"
+  - "@copilotkit/react-core@1.84.0"
+  - "@copilotkit/runtime-client-gql@1.84.0"
+  - "@copilotkit/runtime@1.84.0"
+  - "@copilotkit/shared@1.84.0"
+  - "@copilotkit/web-components@1.84.0"
+  - "@copilotkit/web-inspector@1.84.0"

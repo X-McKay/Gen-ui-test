@@ -14,7 +14,7 @@ import { ReviewHeader } from "@/components/review/ReviewHeader";
 import { ReviewSkeleton } from "@/components/review/ReviewSkeleton";
 import { apiClient, ApiError } from "@/lib/apiClient";
 import type { IntakeRecord, IntakeStatus } from "@/lib/intakeTypes";
-import { fieldLabel } from "@/lib/labels";
+import { fieldLabel } from "@/lib/fieldCatalog";
 
 type LoadState =
   | { status: "loading" }
@@ -158,12 +158,7 @@ function ReviewContent({
       {prohibited && <EscalationBanner />}
       <ReviewHeader record={record} />
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
-        <IntakeReviewPanel
-          record={record}
-          readOnly={readOnly}
-          highlightedField={highlighted}
-          onSave={onSave}
-        />
+        <IntakeReviewPanel record={record} readOnly={readOnly} highlightedField={highlighted} onSave={onSave} />
         <div className="flex flex-col gap-4 lg:sticky lg:top-[88px] lg:max-h-[calc(100vh-104px)] lg:overflow-y-auto lg:pr-2 lg:[scrollbar-color:var(--border)_transparent] lg:[scrollbar-width:thin]">
           <ClassificationSummary record={record} onGoToField={onGoToField} />
           <ReviewActions intakeId={intakeId} record={record} readOnly={prohibited} onSubmitted={onSubmitted} />

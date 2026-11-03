@@ -8,8 +8,7 @@ htmlcov/
 .coverage
 *.db
 .env
-# Tests are not shipped, except the fixture repositories used by MOCK_MODEL=1.
+# Tests are not shipped; the fixture repositories live in fixtures/ and are copied explicitly.
 tests/*
-!tests/fixtures/
 Dockerfile
 .dockerignore

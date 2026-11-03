@@ -9,7 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.governance.classify import reclassify
-from app.intake import repository
+from app.intake import intake_store
 from app.intake.question_bank import QUESTIONS_BY_FIELD
 from app.intake.schema import (
     UNKNOWN,
@@ -49,12 +49,12 @@ def create_intake(
     if owner:
         record.set_field("project.owner", owner, source="inferred", confidence=0.9, confirmed=False)
     reclassify(record)
-    repository.save_record(record)
+    intake_store.save_record(record)
     return record
 
 
 def get_record(intake_id: str) -> IntakeRecord:
-    record = repository.load_record(intake_id)
+    record = intake_store.load_record(intake_id)
     if record is None:
         raise IntakeNotFoundError(intake_id)
     return record
@@ -119,7 +119,7 @@ def apply_updates(
             continue
         applied.append(update.path)
     reclassify(record)
-    repository.save_record(record)
+    intake_store.save_record(record)
     return record, applied, rejected
 
 
@@ -128,18 +128,18 @@ def mark_completed(record: IntakeRecord) -> IntakeRecord:
     if record.meta.status == IntakeStatus.IN_PROGRESS:
         record.meta.status = IntakeStatus.COMPLETED
     reclassify(record)
-    repository.save_record(record, current_step=None)
+    intake_store.save_record(record, current_step=None)
     return record
 
 
 def mark_submitted(record: IntakeRecord) -> IntakeRecord:
     record.meta.submitted_at = datetime.now(UTC)
     record.meta.status = IntakeStatus.SUBMITTED
-    repository.save_record(record)
+    intake_store.save_record(record)
     return record
 
 
 def set_progress(record: IntakeRecord, text: str | None) -> IntakeRecord:
     record.meta.analysis_progress = text
-    repository.save_record(record)
+    intake_store.save_record(record)
     return record

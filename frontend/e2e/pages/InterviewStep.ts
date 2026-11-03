@@ -87,7 +87,10 @@ export class InterviewStepHelper {
         const surface = document.querySelector('[data-testid="intake-surface"]');
         if (!surface) return false;
         const current = Number(surface.getAttribute("data-step") ?? 0);
-        return current > previous && Boolean(document.querySelector('[data-testid="confirm-step"], [data-testid="EscalationNotice"]'));
+        return (
+          current > previous &&
+          Boolean(document.querySelector('[data-testid="confirm-step"], [data-testid="EscalationNotice"]'))
+        );
       },
       after,
       { timeout },
@@ -116,7 +119,9 @@ export class InterviewStepHelper {
       const snapshot = await this.page.evaluate(() => {
         const surface = document.querySelector('[data-testid="intake-surface"]');
         const status = document.querySelector('[data-testid="status-line"]');
-        const fields = [...document.querySelectorAll("fieldset[data-field]")].map((element) => element.getAttribute("data-field"));
+        const fields = [...document.querySelectorAll("fieldset[data-field]")].map((element) =>
+          element.getAttribute("data-field"),
+        );
         return JSON.stringify([surface?.getAttribute("data-step"), status?.getAttribute("data-busy"), fields]);
       });
       const busy = snapshot.includes('"true"');
@@ -154,7 +159,9 @@ export class InterviewStepHelper {
       case "MultiSelectQuestion": {
         const boxes = fieldset.getByRole("checkbox");
         const checked = await boxes.evaluateAll((elements) =>
-          elements.filter((element) => element.getAttribute("aria-checked") === "true").map((element) => element.getAttribute("data-value") ?? ""),
+          elements
+            .filter((element) => element.getAttribute("aria-checked") === "true")
+            .map((element) => element.getAttribute("data-value") ?? ""),
         );
         if (checked.length === 0) {
           const first = boxes.first();
@@ -188,7 +195,9 @@ export class InterviewStepHelper {
     );
     const answers: GivenAnswer[] = [];
     for (const question of questions) {
-      answers.push(notSureFields.has(question.field) ? await this.notSure(question.field) : await this.answer(question, strategy));
+      answers.push(
+        notSureFields.has(question.field) ? await this.notSure(question.field) : await this.answer(question, strategy),
+      );
     }
     return answers;
   }
@@ -223,9 +232,13 @@ export class InterviewStepHelper {
     const fieldset = this.question(question.field);
     if (question.kind === "ShortTextQuestion") return fieldset.getByRole("textbox").inputValue();
     if (question.kind === "MultiSelectQuestion") {
-      return fieldset.getByRole("checkbox").evaluateAll((elements) =>
-        elements.filter((element) => element.getAttribute("aria-checked") === "true").map((element) => element.getAttribute("data-value") ?? ""),
-      );
+      return fieldset
+        .getByRole("checkbox")
+        .evaluateAll((elements) =>
+          elements
+            .filter((element) => element.getAttribute("aria-checked") === "true")
+            .map((element) => element.getAttribute("data-value") ?? ""),
+        );
     }
     const checked = fieldset.locator('[role="radio"][aria-checked="true"]');
     if ((await checked.count()) === 0) return null;

@@ -1,6 +1,6 @@
 # End-to-end tests
 
-Playwright specs for the intake app, one per row of PLAN.md section 7. Selectors are
+Playwright specs for the intake app, one per row of docs/PLAN.md section 7. Selectors are
 `data-testid`, roles with `aria-label`, and `data-*` attributes only; assertions are about
 structure and data, never the agent's wording.
 
@@ -16,14 +16,14 @@ pnpm e2e:live                 # E2E_LIVE=1: real model, counts relax to the plan
 
 Environment:
 
-| Variable               | Effect                                                                  |
-| ---------------------- | ----------------------------------------------------------------------- |
-| `E2E_BASE_URL`         | Frontend origin (default `http://localhost:3000`)                       |
-| `E2E_BACKEND_URL`      | Backend origin for health checks (default `http://127.0.0.1:8000`)      |
-| `E2E_EXTERNAL_SERVERS` | Set when both servers already run; no `webServer` is started            |
-| `E2E_LIVE=1`           | Backend starts with `MOCK_MODEL=0`; global setup asserts `model.ok`     |
-| `E2E_PRODUCTION=1`     | Frontend served with `next start` instead of `next dev`                 |
-| `E2E_WORKERS`          | Local worker count (default 4; the agent allows 10 concurrent runs)     |
+| Variable               | Effect                                                              |
+| ---------------------- | ------------------------------------------------------------------- |
+| `E2E_BASE_URL`         | Frontend origin (default `http://localhost:3000`)                   |
+| `E2E_BACKEND_URL`      | Backend origin for health checks (default `http://127.0.0.1:8000`)  |
+| `E2E_EXTERNAL_SERVERS` | Set when both servers already run; no `webServer` is started        |
+| `E2E_LIVE=1`           | Backend starts with `MOCK_MODEL=0`; global setup asserts `model.ok` |
+| `E2E_PRODUCTION=1`     | Frontend served with `next start` instead of `next dev`             |
+| `E2E_WORKERS`          | Local worker count (default 4; the agent allows 10 concurrent runs) |
 
 Against servers you started yourself:
 

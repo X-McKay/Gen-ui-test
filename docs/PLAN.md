@@ -35,7 +35,9 @@ current docs on that date (see "Library verification").
 
 ```text
 .
-├── PLAN.md · README.md · DEMO.md · Makefile · docker-compose.yml · .env.example
+├── README.md · CLAUDE.md · Makefile · docker-compose.yml · .env.example · .mise.toml · .pre-commit-config.yaml
+├── docs/{PLAN.md, DEMO.md, screenshots/, claude-code-settings.json}
+├── .claude/{skills/, hooks/}                  # add-question, add-framework, verify, e2e-debug; format + staging-guard hooks
 ├── schema/intake.schema.json                 # generated from Pydantic (make export-schema); CI fails if stale
 ├── backend/
 │   ├── pyproject.toml                        # uv, ruff, mypy --strict, pytest, 100 % coverage gate on governance/
@@ -58,7 +60,7 @@ current docs on that date (see "Library verification").
 │   │   │   ├── gap_analysis.py               # required-field gaps, gates, ≤3 question specs, completion rule
 │   │   │   ├── heuristic_extractor.py        # keyword extractor used by MOCK_MODEL and as a prior
 │   │   │   ├── record_service.py             # load/save/apply-updates/reclassify
-│   │   │   └── repository.py                 # SQLModel persistence
+│   │   │   └── intake_store.py                 # SQLModel persistence
 │   │   ├── governance/
 │   │   │   ├── classify.py                   # aggregates modules into `assessment`
 │   │   │   ├── eu_ai_act.py                  # rule table with article citations

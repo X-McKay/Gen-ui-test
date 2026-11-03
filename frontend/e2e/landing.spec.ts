@@ -61,13 +61,19 @@ test.describe("landing", () => {
     await page.emulateMedia({ colorScheme: "light" });
     await landing.goto();
     await expect.poll(() => landing.colorSchemeClass()).toBe("light");
-    await testInfo.attach("landing-light", { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
+    await testInfo.attach("landing-light", {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
 
     await page.emulateMedia({ colorScheme: "dark" });
     await page.reload();
     await expect(landing.newCard).toBeVisible();
     await expect.poll(() => landing.colorSchemeClass()).toBe("dark");
-    await testInfo.attach("landing-dark", { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
+    await testInfo.attach("landing-dark", {
+      body: await page.screenshot({ fullPage: true }),
+      contentType: "image/png",
+    });
 
     await expect(landing.themeToggle).toHaveAttribute("aria-label", "Switch to light mode");
     await landing.themeToggle.click();

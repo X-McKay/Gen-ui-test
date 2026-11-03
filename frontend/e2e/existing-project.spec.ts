@@ -20,7 +20,10 @@ test.describe("existing project", () => {
     await expect(flow.analyzeButton).toBeDisabled();
   });
 
-  test("the fixture repository streams progress, shows findings, and one correction changes the classification", async ({ page, request }) => {
+  test("the fixture repository streams progress, shows findings, and one correction changes the classification", async ({
+    page,
+    request,
+  }) => {
     await paceEventSource(page);
     await watchDom(page);
     const flow = new ExistingProjectPage(page);
@@ -34,7 +37,9 @@ test.describe("existing project", () => {
     // Findings: enough rows, every one with evidence, matching what the API stored.
     const rowCount = await flow.rows.count();
     expect(rowCount).toBeGreaterThanOrEqual(BOUNDS.minFindings);
-    const withEvidence = await page.locator('[data-testid="finding-row"]:has([data-testid="evidence-snippet"])').count();
+    const withEvidence = await page
+      .locator('[data-testid="finding-row"]:has([data-testid="evidence-snippet"])')
+      .count();
     expect(withEvidence).toBe(rowCount);
     if (!LIVE) expect(rowCount).toBe(await getFindingsCount(request, intakeId));
     await expect(flow.row(DOMAINS_FIELD)).toBeVisible();

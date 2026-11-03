@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 
+import { FINDINGS_MESSAGE, RESUME_MESSAGE } from "@/components/intake/agentMessages";
 import { IntakeAgentProvider } from "@/components/intake/IntakeAgentProvider";
 import { IntakeSurface } from "@/components/intake/IntakeSurface";
 import { StatusLine } from "@/components/intake/StatusLine";
@@ -10,7 +11,6 @@ import { RepositoryUrlForm } from "@/components/repo/RepositoryUrlForm";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, apiClient } from "@/lib/apiClient";
-import { FINDINGS_MESSAGE, RESUME_MESSAGE } from "@/lib/intakeState";
 
 type Phase =
   | { kind: "connect"; error: string | null; busy: boolean }
@@ -43,7 +43,9 @@ function ExistingIntake() {
   const router = useRouter();
   const params = useSearchParams();
   const intakeIdParam = params.get("id");
-  const [phase, setPhase] = useState<Phase>(intakeIdParam ? { kind: "loading" } : { kind: "connect", error: null, busy: false });
+  const [phase, setPhase] = useState<Phase>(
+    intakeIdParam ? { kind: "loading" } : { kind: "connect", error: null, busy: false },
+  );
   const sourceRef = useRef<EventSource | null>(null);
   const phaseRef = useRef(phase);
   useEffect(() => {
@@ -162,11 +164,20 @@ function ExistingIntake() {
   }
   if (phase.kind === "failed") {
     return (
-      <div role="alert" className="grid gap-3 rounded-[var(--radius)] border border-destructive/40 bg-destructive/5 p-6" data-testid="analysis-error">
+      <div
+        role="alert"
+        className="grid gap-3 rounded-[var(--radius)] border border-destructive/40 bg-destructive/5 p-6"
+        data-testid="analysis-error"
+      >
         <p className="font-medium">The repository could not be analysed.</p>
         <p className="text-sm text-muted-foreground">{phase.message}</p>
         <div>
-          <Button type="button" variant="secondary" className="h-11" onClick={() => setPhase({ kind: "connect", error: null, busy: false })}>
+          <Button
+            type="button"
+            variant="secondary"
+            className="h-11"
+            onClick={() => setPhase({ kind: "connect", error: null, busy: false })}
+          >
             Try another URL
           </Button>
         </div>

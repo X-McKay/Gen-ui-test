@@ -27,7 +27,9 @@ export class LandingPage {
   async tabTo(testId: string, maxTabs = 20): Promise<void> {
     for (let i = 0; i < maxTabs; i += 1) {
       await this.page.keyboard.press("Tab");
-      const focused = await this.page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset.testid ?? null);
+      const focused = await this.page.evaluate(
+        () => (document.activeElement as HTMLElement | null)?.dataset.testid ?? null,
+      );
       if (focused === testId) return;
     }
     throw new Error(`Tab never reached [data-testid="${testId}"] within ${maxTabs} presses`);

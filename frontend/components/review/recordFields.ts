@@ -1,5 +1,5 @@
 import type { IntakeRecord } from "@/lib/intakeTypes";
-import { sectionOf } from "@/lib/labels";
+import { sectionOf } from "@/lib/fieldCatalog";
 
 /** The shape every record leaf shares. */
 export interface FieldMetaLike {

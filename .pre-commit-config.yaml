@@ -1,0 +1,51 @@
+# Local hooks only: every check runs the project's own toolchain (uv / pnpm), so the versions
+# are the ones in backend/uv.lock and frontend/pnpm-lock.yaml and match CI exactly.
+# Install with `make setup` (or `uv tool run pre-commit install`).
+repos:
+  - repo: local
+    hooks:
+      - id: no-secrets-or-local-artefacts
+        name: refuse .env, *.db and Playwright MCP artefacts
+        entry: sh -c 'printf "refusing to commit secrets or local artefacts:\n  %s\n" "$@"; exit 1' --
+        language: system
+        files: '(^|/)\.env(\.local|\.production|\.development)?$|\.db$|^\.playwright-mcp/'
+
+      - id: ruff-format
+        name: ruff format (backend)
+        entry: uv run --project backend ruff format --check
+        language: system
+        files: '^backend/.*\.py$'
+
+      - id: ruff-check
+        name: ruff check (backend)
+        entry: uv run --project backend ruff check
+        language: system
+        files: '^backend/.*\.py$'
+
+      - id: mypy
+        name: mypy --strict (backend/app)
+        entry: sh -c 'cd backend && uv run mypy app'
+        language: system
+        pass_filenames: false
+        files: '^backend/app/.*\.py$'
+
+      - id: schema-fresh
+        name: schema/intake.schema.json matches the Pydantic model
+        entry: sh -c 'cd backend && PYTHONPATH=. uv run python scripts/export_schema.py --check'
+        language: system
+        pass_filenames: false
+        files: '^backend/app/intake/(schema|question_bank)\.py$|^schema/intake\.schema\.json$'
+
+      - id: prettier
+        name: prettier --check (frontend)
+        entry: bash -c 'cd frontend && exec node_modules/.bin/prettier --check "${@#frontend/}"' --
+        language: system
+        files: '^frontend/.*\.(ts|tsx|js|mjs|cjs|json|css|md)$'
+        exclude: '^frontend/(lib/intakeTypes\.ts|pnpm-lock\.yaml|AGENTS\.md|e2e/.*-snapshots/)'
+
+      - id: eslint
+        name: eslint (frontend)
+        entry: bash -c 'cd frontend && exec node_modules/.bin/eslint --max-warnings 0 "${@#frontend/}"' --
+        language: system
+        files: '^frontend/.*\.(ts|tsx|mjs)$'
+        exclude: '^frontend/(lib/intakeTypes\.ts|next-env\.d\.ts)'

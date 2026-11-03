@@ -8,7 +8,7 @@ from google.adk.tools.tool_context import ToolContext
 
 from app.agents.surface_plan import Step
 from app.agents.tools.context import load_intake, load_step, publish_state, tool_error
-from app.intake import repository
+from app.intake import intake_store
 from app.intake.gap_analysis import is_complete, section_progress
 from app.intake.record_service import IntakeNotFoundError, mark_completed
 
@@ -35,7 +35,7 @@ def finalize_intake(tool_context: ToolContext) -> dict[str, Any]:
         intro="That is everything we need.",
         progress=section_progress(record),
     )
-    repository.save_current_step(record.meta.intake_id, step.model_dump(mode="json"))
+    intake_store.save_current_step(record.meta.intake_id, step.model_dump(mode="json"))
     publish_state(tool_context, record, step=step, status="Done. Opening the review…")
     return {
         "status": "ok",

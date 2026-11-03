@@ -4,7 +4,7 @@ Both flows, captured from the app running locally with `make dev-mock` (backend
 `MOCK_MODEL=1` on :8000, frontend on :3000, Playwright-driven Chromium at 1280×800; the
 mobile shot is 390×844). The scripted model drives the same tools and `render_ui` calls as
 the live model, so what you see here is the production UI; only the extraction is keyword
-based. Screenshots live in `docs/screenshots/`.
+based. Screenshots live in `screenshots/`.
 
 ## Landing
 
@@ -13,9 +13,9 @@ light and dark and the choice is remembered per browser.
 
 | Light | Dark |
 | --- | --- |
-| ![Landing, light](docs/screenshots/01-landing-light.png) | ![Landing, dark](docs/screenshots/02-landing-dark.png) |
+| ![Landing, light](screenshots/01-landing-light.png) | ![Landing, dark](screenshots/02-landing-dark.png) |
 
-<img src="docs/screenshots/03-landing-mobile.png" alt="Landing at 390 px wide" width="300">
+<img src="screenshots/03-landing-mobile.png" alt="Landing at 390 px wide" width="300">
 
 ## Flow 1 — New project (HR candidate summaries)
 
@@ -30,7 +30,7 @@ light and dark and the choice is remembered per browser.
 Name `Candidate summary assistant`, owner `Talent Acquisition Platform team`, then
 **Analyze**.
 
-![Describe form](docs/screenshots/04-describe-form.png)
+![Describe form](screenshots/04-describe-form.png)
 
 **Step 1 — chips before any question.** The agent calls `extract_intake_facts` once, then
 `get_next_questions`, and renders one `InterviewStep` into the `interview` target. Thirteen
@@ -42,19 +42,19 @@ emotion recognition, no social scoring. Only one question is left among the gate
 line. One click on **Confirm and continue** (`data-testid="confirm-step"`) confirms every
 chip and the answer in bulk.
 
-![Step 1: assumption chips and the first gate question](docs/screenshots/05-step1-chips.png)
+![Step 1: assumption chips and the first gate question](screenshots/05-step1-chips.png)
 
 **Step 2 — AI system.** Two questions from one section: autonomy (pre-selected
 "Recommends, a person decides") and human oversight. The confirm button stays disabled until
 every question has an answer or "Not sure".
 
-![Step 2: AI system questions](docs/screenshots/06-step2-questions.png)
+![Step 2: AI system questions](screenshots/06-step2-questions.png)
 
 **Step 3 — Data, "Not sure".** "Is personal data used to train or fine-tune a model?" is
 answered with **Not sure**; the record stores the literal `"unknown"` (distinct from `false`)
 and it surfaces later as an open question.
 
-![Step 3: Not sure](docs/screenshots/07-step3-not-sure.png)
+![Step 3: Not sure](screenshots/07-step3-not-sure.png)
 
 **Step 4 — Use case.** One question (direct interaction with people → No). `get_next_questions`
 returns `done: true`, the agent calls `finalize_intake` and the page redirects to
@@ -68,14 +68,14 @@ Art. 53), obligations grouped by framework (EU AI Act, GDPR, NIST AI RMF, ISO/IE
 Internal AI policy), recommended next steps and the open question from step 3. JSON and PDF
 downloads and Submit sit in the actions column.
 
-![Review page, new project](docs/screenshots/08-review-new-high-risk.png)
+![Review page, new project](screenshots/08-review-new-high-risk.png)
 
-![Review page top: classification panel in the right-hand column](docs/screenshots/09-review-classification-panel.png)
+![Review page top: classification panel in the right-hand column](screenshots/09-review-classification-panel.png)
 
 **PDF form.** `GET /api/backend/intakes/11c23848f09c/form.html` is the same template
 WeasyPrint renders to `export.pdf` (30 kB, `%PDF-1.7`, verified with `curl`).
 
-![Intake form (HTML preview of the PDF)](docs/screenshots/10-pdf-form-preview.png)
+![Intake form (HTML preview of the PDF)](screenshots/10-pdf-form-preview.png)
 
 **Questions asked:** 5 (`record.meta.question_count` from `GET /api/backend/intakes/11c23848f09c`;
 status `completed`, mode `new`, classification `high_risk`, overall tier `high`,
@@ -85,10 +85,10 @@ status `completed`, mode `new`, classification `high_risk`, overall tier `high`,
 ## Flow 2 — Existing project (repository analysis)
 
 **Scenario.** `/intake/existing`, repository `https://github.com/intake-fixtures/hr-screening`
-(a bundled fixture; `MOCK_MODEL=1` resolves it from `backend/tests/fixtures/repos/hr_screening`
+(a bundled fixture; outside `ENVIRONMENT=production` it is served from `backend/fixtures/repos/hr_screening`
 without touching the network). The token field is optional and defaults to the server token.
 
-![Repository connect form](docs/screenshots/11-repository-connect-form.png)
+![Repository connect form](screenshots/11-repository-connect-form.png)
 
 **Analysis progress.** `POST /repositories/analyze` returns a job id and the page follows
 `GET /repositories/analyze/{job}/events` (SSE: "Validating repository URL", "Cloning … (shallow)",
@@ -102,19 +102,19 @@ findings, each with the inferred value, an evidence path and snippet
 `docs/retention.md`, `README.md`) and a confidence. The pencil opens an inline correction;
 **Confirm and continue** accepts every row in bulk.
 
-![Findings table](docs/screenshots/13-findings-table.png)
+![Findings table](screenshots/13-findings-table.png)
 
 **Gap questions only.** What the repository could not answer is asked afterwards: project
 name and owner (Project section), then special-category data (answered **Not sure**) and
 training on personal data (No). Nothing already evidenced is asked again.
 
-![Gap questions after the findings](docs/screenshots/14-existing-gap-questions.png)
+![Gap questions after the findings](screenshots/14-existing-gap-questions.png)
 
 **Review in `existing` mode.** The header carries the "Existing project" badge and the
 repository link; the record classifies as **High risk** (HR and employment) with the same
 framework set as flow 1.
 
-![Review page, existing project](docs/screenshots/15-review-existing-mode.png)
+![Review page, existing project](screenshots/15-review-existing-mode.png)
 
 **Questions asked:** 4 (`record.meta.question_count` from `GET /api/backend/intakes/8ed0046c1338`;
 status `completed`, mode `existing`, `repo_url = https://github.com/intake-fixtures/hr-screening`,
@@ -128,8 +128,8 @@ screenshots). Items marked "verified by" are covered by the named target rather 
 walkthrough.
 The `make e2e` run of 2026-11-03 (Playwright starting both servers, `MOCK_MODEL=1`) passed
 96 tests across chromium, firefox, webkit and Pixel 7 with 16 skipped (visual baselines are
-chromium-only); `make test-backend` reported 419 tests and 100 % branch coverage of
-`app/governance`; `make check-schema` reported the schema fresh.
+chromium and Pixel 7 only); `make test-backend` reported 421 tests and 100 % branch coverage of
+`app/governance`; `make check-schema` reported the schema fresh; `pre-commit run --all-files` passed.
 
 - [x] **Assumptions before questions**: step 1 shows 13 chips and one question; inferences at
   ≥ 0.8 are never re-asked (steps 2–4 only asked what was missing or below threshold).

@@ -56,7 +56,14 @@ interface RenderResult {
  * (nothing valid reached the page). The tool result already carries the reasons, so running
  * the agent again lets it self-correct.
  */
-function lastRenderWasRejected(messages: readonly { role: string; content?: unknown; toolCallId?: string; toolCalls?: { id: string; function: { name: string } }[] }[]): boolean {
+function lastRenderWasRejected(
+  messages: readonly {
+    role: string;
+    content?: unknown;
+    toolCallId?: string;
+    toolCalls?: { id: string; function: { name: string } }[];
+  }[],
+): boolean {
   const renderCallIds = new Set<string>();
   for (const message of messages) {
     if (message.role === "assistant") {
@@ -181,12 +188,20 @@ export function IntakeSurface({ intakeId, initialMessage, initialStatus, childre
   }, [error, running, state.intake_status, step, initialStatus]);
 
   return (
-    <div className="grid grid-cols-1 gap-5 [contain:inline-size]" data-testid="intake-surface" data-step={step?.step_number ?? 0}>
+    <div
+      className="grid grid-cols-1 gap-5 [contain:inline-size]"
+      data-testid="intake-surface"
+      data-step={step?.step_number ?? 0}
+    >
       <ProgressRail sections={step?.progress ?? EMPTY_PROGRESS} />
       {children}
       <StatusLine text={statusText} busy={running} />
       {error ? (
-        <div role="alert" className="grid gap-3 rounded-[var(--radius)] border border-destructive/40 bg-destructive/5 p-4" data-testid="agent-error">
+        <div
+          role="alert"
+          className="grid gap-3 rounded-[var(--radius)] border border-destructive/40 bg-destructive/5 p-4"
+          data-testid="agent-error"
+        >
           <p className="text-sm font-medium">Something went wrong while talking to the agent.</p>
           <p className="text-sm text-muted-foreground">{error}</p>
           <div>

@@ -1,7 +1,13 @@
 import type { Page } from "@playwright/test";
 
 import { BOUNDS } from "../fixtures/live";
-import { type Advance, type AnswerStrategy, type GivenAnswer, InterviewStepHelper, type QuestionOnScreen } from "./InterviewStep";
+import {
+  type Advance,
+  type AnswerStrategy,
+  type GivenAnswer,
+  InterviewStepHelper,
+  type QuestionOnScreen,
+} from "./InterviewStep";
 import { ReviewPage } from "./ReviewPage";
 
 export interface StepRecord {

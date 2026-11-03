@@ -15,7 +15,7 @@ import {
   RISK_TIER_LABELS,
   TIER_EXPLANATIONS,
   type TierKey,
-} from "@/lib/labels";
+} from "@/lib/fieldCatalog";
 import { cn } from "@/lib/utils";
 
 interface ClassificationSummaryProps {
@@ -192,7 +192,12 @@ export function ClassificationSummary({ record, onGoToField, className }: Classi
                       <span>{o.text}</span>
                       {(o.reference || o.role) && (
                         <span className="text-muted-foreground">
-                          {[o.reference, o.role ? `${o.role === "both" ? "Provider and deployer" : o.role === "provider" ? "Provider" : "Deployer"}` : null]
+                          {[
+                            o.reference,
+                            o.role
+                              ? `${o.role === "both" ? "Provider and deployer" : o.role === "provider" ? "Provider" : "Deployer"}`
+                              : null,
+                          ]
                             .filter(Boolean)
                             .join(" · ")}
                         </span>

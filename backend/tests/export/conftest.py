@@ -19,15 +19,15 @@ def isolated_database(tmp_path_factory: pytest.TempPathFactory) -> Iterator[None
         monkeypatch.setenv("DATABASE_URL", f"sqlite:///{database_path}")
         monkeypatch.setenv("MOCK_MODEL", "1")
         monkeypatch.delenv("INTAKE_WEBHOOK_URL", raising=False)
-        from app.intake import repository
+        from app.intake import intake_store
         from app.settings import get_settings
 
         get_settings.cache_clear()
-        repository.reset_engine()
+        intake_store.reset_engine()
         assert os.environ["DATABASE_URL"].endswith("export-tests.sqlite")
         yield
         get_settings.cache_clear()
-        repository.reset_engine()
+        intake_store.reset_engine()
 
 
 @pytest.fixture
