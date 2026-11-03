@@ -81,7 +81,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         if request.url.path == AGENT_PATH and request.method == "POST":
-            client = request.client.host if request.client else "unknown"
+            forwarded = request.headers.get("x-forwarded-for", "")
+            client = forwarded.split(",")[0].strip() or (
+                request.client.host if request.client else "unknown"
+            )
             if not limiter.allow(client):
                 return JSONResponse({"detail": "Too many requests"}, status_code=429)
         response = await call_next(request)

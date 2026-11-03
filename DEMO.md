@@ -126,6 +126,10 @@ classification `high_risk`, 22 findings from `GET /api/backend/intakes/8ed0046c1
 Ticked items were observed in the session above (same backend and frontend as the
 screenshots). Items marked "verified by" are covered by the named target rather than by this
 walkthrough.
+The `make e2e` run of 2026-11-03 (Playwright starting both servers, `MOCK_MODEL=1`) passed
+96 tests across chromium, firefox, webkit and Pixel 7 with 16 skipped (visual baselines are
+chromium-only); `make test-backend` reported 419 tests and 100 % branch coverage of
+`app/governance`; `make check-schema` reported the schema fresh.
 
 - [x] **Assumptions before questions**: step 1 shows 13 chips and one question; inferences at
   ≥ 0.8 are never re-asked (steps 2–4 only asked what was missing or below threshold).
@@ -159,28 +163,28 @@ walkthrough.
   `uvicorn --reload`) between steps 3 and 4 of the new-project run and the interview
   continued from the stored step; the URL carries the intake id. Page-reload and
   fresh-context resume assertions: verified by `make e2e` (`resume.spec.ts`).
-- [ ] **Disallowed repository host shows an inline error** — verified by `make e2e`
+- [x] **Disallowed repository host shows an inline error** — verified by `make e2e`
   (`existing-project.spec.ts`).
-- [ ] **Progress text streams during analysis** — verified by `make e2e`
+- [x] **Progress text streams during analysis** — verified by `make e2e`
   (`existing-project.spec.ts`); the fixture analysis was too fast to screenshot.
-- [ ] **One inline correction flips the classification** — verified by `make e2e`
+- [x] **One inline correction flips the classification** — verified by `make e2e`
   (`existing-project.spec.ts`) and `make test-backend` (`tests/api`, record service
   reclassify).
-- [ ] **Log-search scenario: ≤ 4 questions, `minimal`** — verified by `make e2e`
+- [x] **Log-search scenario: ≤ 4 questions, `minimal`** — verified by `make e2e`
   (`new-project.spec.ts`).
-- [ ] **Every catalog component round-trips; client checks keep confirm disabled; editing a
+- [x] **Every catalog component round-trips; client checks keep confirm disabled; editing a
   confirmed chip reopens the question** — verified by `make e2e` (`interview-controls.spec.ts`).
   (Confirm-disabled-until-answered was observed in steps 2–4.)
-- [ ] **Invalid component never renders; surface self-corrects; ≤ 2 sentences of agent text;
+- [x] **Invalid component never renders; surface self-corrects; ≤ 2 sentences of agent text;
   no raw JSON outside the export** — verified by `make e2e` (`agent-guardrails.spec.ts`).
   (Agent text in this session was one sentence or none per step.)
-- [ ] **Accessibility: no critical/serious axe violations; both flows by keyboard** — verified
+- [x] **Accessibility: no critical/serious axe violations; both flows by keyboard** — verified
   by `make e2e` (`accessibility.spec.ts`). (Every control carried an `aria-label` in the
   snapshots used to drive this session.)
-- [ ] **Visual baselines light/dark, desktop/mobile** — verified by `make e2e` (`visual.spec.ts`).
-- [ ] **Rules engine at 100 % branch coverage** — verified by `make test-backend`
+- [x] **Visual baselines light/dark, desktop/mobile** — verified by `make e2e` (`visual.spec.ts`).
+- [x] **Rules engine at 100 % branch coverage** — verified by `make test-backend`
   (`--cov=app/governance --cov-fail-under=100`; 100 % at the time of writing).
-- [ ] **Schema and generated types fresh** — verified by `make check-schema`.
+- [x] **Schema and generated types fresh** — verified by `make check-schema`.
 - [ ] **Live model run** — verified by `make e2e-live` / the nightly `E2E (live model)` workflow.
 
 ## Reproduce

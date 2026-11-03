@@ -57,6 +57,8 @@ export default defineConfig({
           url: `${backendURL}/healthz`,
           env: {
             MOCK_MODEL: live ? "0" : "1",
+            // Every worker reaches the backend from one address; the per-address limit is for people.
+            AGENT_RATE_LIMIT: "1000/minute",
             DATABASE_URL: "sqlite:////tmp/intake-e2e.db",
           },
           reuseExistingServer: !isCI,

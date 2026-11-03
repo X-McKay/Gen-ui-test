@@ -138,7 +138,6 @@ function Chip({ item }: { item: AssumptionItem }) {
           <button
             type="button"
             className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-md px-1 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label={`${item.label}: ${labelFor(item, value)}. Show provenance`}
           >
             <span className="shrink-0 text-muted-foreground">{item.label}</span>
             <span className="min-w-0 truncate font-medium text-foreground" title={labelFor(item, value)}>
@@ -146,6 +145,7 @@ function Chip({ item }: { item: AssumptionItem }) {
             </span>
             <ConfidenceDots confidence={item.confidence} className="shrink-0" />
             <Info className="size-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span className="sr-only">, show provenance</span>
           </button>
         </FieldProvenancePopover>
         <span className="ml-auto inline-flex shrink-0 items-center gap-1">

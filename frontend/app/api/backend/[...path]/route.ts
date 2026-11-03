@@ -31,6 +31,9 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     if (value) headers.set(name, value);
   }
 
+  // The backend rate-limits the agent endpoint per client; tell it who the client is.
+  const forwardedFor = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip");
+  if (forwardedFor) headers.set("x-forwarded-for", forwardedFor);
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const upstream = await fetch(target, {
     method: request.method,

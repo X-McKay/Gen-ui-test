@@ -132,7 +132,7 @@ All settings come from the environment (`backend/app/settings.py`, pydantic-sett
 | `LOG_AGUI_EVENTS` | `0` | `1` raises the AG-UI/ADK loggers to DEBUG (they echo message content; local debugging only). |
 | `DATABASE_URL` | `sqlite:///./intake.db` | Any SQLAlchemy URL, e.g. `postgresql+psycopg://…`. |
 | `FRONTEND_ORIGIN` | `http://localhost:3000` | CORS allow-origin for the API. |
-| `AGENT_RATE_LIMIT` | `60/minute` | Sliding-window limit per client address on `POST /agent` (429 beyond it). |
+| `AGENT_RATE_LIMIT` | `60/minute` | Sliding-window limit per client on `POST /agent` (429 beyond it). The client is the first `X-Forwarded-For` entry, which the Next proxy sets, else the socket address. |
 | `AGENT_MAX_CONCURRENT_RUNS` | `200` | Open interviews the agent keeps at once; every rendered step holds an execution slot until the interview finishes or goes stale. |
 | `AGENT_EXECUTION_TIMEOUT_S` | `600` | Seconds after which an abandoned interview's slot is reclaimed. |
 | `DEFAULT_OWNER` | empty | Prefilled `project.owner` when no SSO header is present. |

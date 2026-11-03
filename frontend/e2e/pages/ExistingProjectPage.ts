@@ -29,6 +29,7 @@ export class ExistingProjectPage {
   readonly findingsTable: Locator;
   readonly rows: Locator;
   readonly analysisError: Locator;
+  readonly agentError: Locator;
 
   constructor(readonly page: Page) {
     this.interview = new InterviewStepHelper(page);
@@ -43,6 +44,7 @@ export class ExistingProjectPage {
     this.findingsTable = page.getByTestId("findings-table");
     this.rows = page.getByTestId("finding-row");
     this.analysisError = page.getByTestId("analysis-error");
+    this.agentError = page.getByTestId("agent-error");
   }
 
   async goto(): Promise<void> {
@@ -61,7 +63,10 @@ export class ExistingProjectPage {
     await this.enterUrl(url);
     await expect(this.analyzeButton).toBeEnabled();
     await this.analyzeButton.click();
-    await expect(this.findings.or(this.analysisError)).toBeVisible({ timeout });
+    await expect(this.findings.or(this.analysisError).or(this.agentError)).toBeVisible({ timeout });
+    if (await this.agentError.count()) {
+      throw new Error(`Agent error on screen: ${await this.agentError.innerText()}`);
+    }
     if (await this.analysisError.count()) {
       throw new Error(`Repository analysis failed: ${await this.analysisError.innerText()}`);
     }
