@@ -87,7 +87,9 @@ export function InterviewFormProvider({ stepKey, submitting, children, onChange 
   const [assumptions, setAssumptions] = useState<Record<string, unknown>>({});
   const [registrations, setRegistrations] = useState<Record<string, FieldRegistration>>({});
   const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   useEffect(() => {
     writeDraft(stepKey, answers);

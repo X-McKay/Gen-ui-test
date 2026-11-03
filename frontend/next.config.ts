@@ -17,6 +17,7 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  turbopack: { rules: { "*.css": { loaders: ["@tailwindcss/turbopack"], as: "*.css" } } },
   async rewrites() {
     return [{ source: "/api/backend/:path*", destination: `${backendUrl}/:path*` }];
   },

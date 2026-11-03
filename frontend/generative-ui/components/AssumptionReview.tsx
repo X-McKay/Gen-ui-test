@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { FieldProvenancePopover } from "@/components/review/FieldProvenancePopover";
 import { NOT_SURE, useInterviewForm } from "@/generative-ui/interviewForm";
 import { cn } from "@/lib/utils";
 
@@ -29,12 +29,6 @@ export interface AssumptionItem {
 export interface AssumptionReviewProps {
   title?: string;
   assumptions: AssumptionItem[];
-}
-
-function sourceLabel(source: string): string {
-  if (source === "user") return "You told us";
-  if (source.startsWith("repo:")) return `Repository: ${source.slice(5)}`;
-  return "Inferred from your description";
 }
 
 function labelFor(item: AssumptionItem, value: unknown): string {
@@ -126,34 +120,24 @@ function Chip({ item }: { item: AssumptionItem }) {
       data-state={state}
     >
       <div className="flex items-center gap-2 flex-wrap">
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="flex min-h-9 items-center gap-2 rounded-md px-1 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={`Provenance for ${item.label}`}
-            >
-              <span className="text-muted-foreground">{item.label}</span>
-              <span className="font-medium text-foreground">{labelFor(item, value)}</span>
-              <ConfidenceDots confidence={item.confidence} />
-              <Info className="size-3.5 text-muted-foreground" aria-hidden="true" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 text-sm" align="start">
-            <p className="font-medium">{item.label}</p>
-            <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-muted-foreground">
-              <dt>Source</dt>
-              <dd className="text-foreground">{sourceLabel(item.source)}</dd>
-              <dt>Confidence</dt>
-              <dd className="text-foreground tabular-nums">{Math.round(item.confidence * 100)}%</dd>
-              <dt>Confirmed</dt>
-              <dd className="text-foreground">{state === "confirmed" ? "Yes" : "Not yet"}</dd>
-            </dl>
-            {item.mustConfirm ? (
-              <p className="mt-2 text-xs text-muted-foreground">This value changes the classification, so we ask you to confirm it.</p>
-            ) : null}
-          </PopoverContent>
-        </Popover>
+        <FieldProvenancePopover
+          label={item.label}
+          displayValue={labelFor(item, value)}
+          confidence={item.confidence}
+          source={item.source}
+          confirmed={state === "confirmed"}
+        >
+          <button
+            type="button"
+            className="flex min-h-9 items-center gap-2 rounded-md px-1 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`Provenance for ${item.label}`}
+          >
+            <span className="text-muted-foreground">{item.label}</span>
+            <span className="font-medium text-foreground">{labelFor(item, value)}</span>
+            <ConfidenceDots confidence={item.confidence} />
+            <Info className="size-3.5 text-muted-foreground" aria-hidden="true" />
+          </button>
+        </FieldProvenancePopover>
         <span className="ml-auto inline-flex items-center gap-1">
           <Button
             type="button"

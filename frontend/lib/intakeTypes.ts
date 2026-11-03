@@ -1,4 +1,4 @@
-/* eslint-disable */ /* Generated from schema/intake.schema.json by pnpm gen:types. Do not edit. */
+/* Generated from schema/intake.schema.json by pnpm gen:types. Do not edit. */
 
 export type IntakeId = string;
 export type SchemaVersion = string;
