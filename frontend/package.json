@@ -59,10 +59,5 @@
     "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"
   },
-  "packageManager": "pnpm@11.21.0",
-  "pnpm": {
-    "ignoredBuiltDependencies": [
-      "@scarf/scarf"
-    ]
-  }
+  "packageManager": "pnpm@11.21.0"
 }

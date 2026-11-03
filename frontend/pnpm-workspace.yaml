@@ -13,3 +13,6 @@ minimumReleaseAgeExclude:
   - '@copilotkit/shared@1.84.0'
   - '@copilotkit/web-components@1.84.0'
   - '@copilotkit/web-inspector@1.84.0'
+
+ignoredBuiltDependencies:
+  - "@scarf/scarf"
