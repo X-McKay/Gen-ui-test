@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { InterviewFormProvider, NOT_SURE, clearDraft, useInterviewForm } from "@/generative-ui/interviewForm";
 import { cn } from "@/lib/utils";
 
-export type InterviewSection = "project" | "ai_system" | "data" | "use_case" | "summary";
+export type InterviewSection = "project" | "ai_system" | "data" | "use_case" | "controls" | "summary";
 
 export interface InterviewStepSubmission {
   answers: Record<string, unknown>;
@@ -31,6 +31,7 @@ const SECTION_LABELS: Record<InterviewSection, string> = {
   ai_system: "AI system",
   data: "Data",
   use_case: "Use case",
+  controls: "Controls",
   summary: "Summary",
 };
 

@@ -5,7 +5,7 @@
  * PDF say the same thing. Keep the two in sync when a question changes.
  */
 
-export type SectionKey = "project" | "ai_system" | "data" | "use_case";
+export type SectionKey = "project" | "ai_system" | "data" | "use_case" | "controls";
 export type ControlKind = "choice" | "multi" | "yes_no" | "text";
 
 export interface OptionSpec {
@@ -33,9 +33,10 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
   ai_system: "AI system",
   data: "Data",
   use_case: "Use case",
+  controls: "Controls",
 };
 
-export const SECTION_ORDER: readonly SectionKey[] = ["project", "ai_system", "data", "use_case"];
+export const SECTION_ORDER: readonly SectionKey[] = ["project", "ai_system", "data", "use_case", "controls"];
 
 const opts = (...pairs: readonly (readonly [string, string])[]): OptionSpec[] =>
   pairs.map(([value, label]) => ({ value, label }));
@@ -131,6 +132,15 @@ export const FIELD_SPECS: readonly FieldSpec[] = [
       ["global", "Global"],
     ),
     required: false,
+  }),
+  spec({
+    field: "project.third_party_services",
+    section: "project",
+    label: "Third-party services",
+    prompt: "Which external services or software does it depend on at run time?",
+    control: "text",
+    required: false,
+    placeholder: "e.g. OpenAI API, AWS S3, Postgres (RDS)",
   }),
   // --- AI system ------------------------------------------------------------------------
   spec({
@@ -449,6 +459,28 @@ export const FIELD_SPECS: readonly FieldSpec[] = [
     required: false,
     whyAsked: "Untargeted facial scraping is a prohibited practice.",
   }),
+  // --- Controls -------------------------------------------------------------------------
+  // Must be confirmed: only confirmed controls lower the residual risk.
+  spec({
+    field: "controls.in_place",
+    section: "controls",
+    label: "Controls in place",
+    prompt: "Which of these controls are in place today? (Not plans.)",
+    control: "multi",
+    options: opts(
+      ["guardrails", "Input and output guardrails"],
+      ["access_controls", "Access controls"],
+      ["pii_minimisation", "Personal data minimisation"],
+      ["abuse_monitoring", "Abuse monitoring"],
+      ["pre_release_evaluation", "Evaluation and red-teaming"],
+      ["vendor_data_protections", "Vendor data protections"],
+      ["incident_response", "Incident response"],
+      ["user_disclosure", "User disclosure"],
+      ["none", "None of these yet"],
+    ),
+    mustConfirm: true,
+    whyAsked: "Confirmed controls lower the residual risk; plans do not.",
+  }),
 ];
 
 export const FIELD_SPECS_BY_PATH: Readonly<Record<string, FieldSpec>> = Object.fromEntries(
@@ -484,6 +516,7 @@ export const SECTION_FIELDS: Readonly<Record<SectionKey, readonly string[]>> = {
   ai_system: FIELD_SPECS.filter((s) => s.section === "ai_system").map((s) => s.field),
   data: FIELD_SPECS.filter((s) => s.section === "data").map((s) => s.field),
   use_case: FIELD_SPECS.filter((s) => s.section === "use_case").map((s) => s.field),
+  controls: FIELD_SPECS.filter((s) => s.section === "controls").map((s) => s.field),
 };
 
 export const MUST_CONFIRM_FIELDS: ReadonlySet<string> = new Set(
@@ -533,6 +566,27 @@ export const RISK_TIER_LABELS: Record<"low" | "medium" | "high" | "critical", st
   high: "High",
   critical: "Critical",
 };
+
+export type RiskTierKey = keyof typeof RISK_TIER_LABELS;
+
+/** What one declared control did to the residual score. */
+export type ControlStatus = "applied" | "unconfirmed" | "absent" | "unknown";
+
+/** Display order and short labels for control statuses on the review page. */
+export const CONTROL_STATUS_ORDER: readonly ControlStatus[] = ["applied", "unconfirmed", "absent", "unknown"];
+
+export const CONTROL_STATUS_LABELS: Record<ControlStatus, string> = {
+  applied: "Confirmed",
+  unconfirmed: "Claimed, not confirmed",
+  absent: "Not in place",
+  unknown: "Not answered",
+};
+
+/** One sentence each for the two risk profiles, shown under their tiers. */
+export const RISK_PROFILE_EXPLANATIONS = {
+  inherent: "The risk of the use case as described, before any controls.",
+  residual: "What remains after the controls you have confirmed. Inferred controls count once confirmed.",
+} as const;
 
 export const FRAMEWORK_LABELS: Readonly<Record<string, string>> = {
   eu_ai_act: "EU AI Act",

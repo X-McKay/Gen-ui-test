@@ -14,11 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.intake.schema import (
     AutonomyLevel,
+    ControlKind,
     DataSubject,
     Domain,
     IntakeRecord,
     LifecycleStage,
     ModelSource,
+    RiskTier,
     SpecialCategory,
     TargetUsers,
 )
@@ -31,6 +33,7 @@ class Section(StrEnum):
     AI_SYSTEM = "ai_system"
     DATA = "data"
     USE_CASE = "use_case"
+    CONTROLS = "controls"
 
 
 SECTION_LABELS: dict[Section, str] = {
@@ -38,6 +41,7 @@ SECTION_LABELS: dict[Section, str] = {
     Section.AI_SYSTEM: "AI system",
     Section.DATA: "Data",
     Section.USE_CASE: "Use case",
+    Section.CONTROLS: "Controls",
 }
 
 
@@ -242,6 +246,16 @@ QUESTION_BANK: list[QuestionSpec] = [
         ),
         required=False,
         priority=17,
+    ),
+    QuestionSpec(
+        field="project.third_party_services",
+        section=Section.PROJECT,
+        label="Third-party services",
+        prompt="Which external services or software does it depend on at run time?",
+        control="text",
+        required=False,
+        placeholder="e.g. OpenAI API, AWS S3, Postgres (RDS)",
+        priority=18,
     ),
     # --- AI system ------------------------------------------------------------------------
     QuestionSpec(
@@ -554,6 +568,61 @@ QUESTION_BANK: list[QuestionSpec] = [
         why_asked="Untargeted facial scraping is a prohibited practice.",
         priority=47,
     ),
+    # --- Controls: one question, asked only when the inherent risk is medium or above. It
+    # must be confirmed because only confirmed controls lower the residual risk -------------
+    QuestionSpec(
+        field="controls.in_place",
+        section=Section.CONTROLS,
+        label="Controls in place",
+        prompt="Which of these controls are in place today? (Not plans.)",
+        control="multi",
+        options=[
+            Option(
+                value=ControlKind.GUARDRAILS,
+                label="Input and output guardrails",
+                description="Prompt-injection and content filters on inputs and outputs",
+            ),
+            Option(
+                value=ControlKind.ACCESS_CONTROLS,
+                label="Access controls",
+                description="Authentication and authorisation restrict who can use it",
+            ),
+            Option(
+                value=ControlKind.PII_MINIMISATION,
+                label="Personal data minimisation",
+                description="Personal data is redacted or minimised before the model",
+            ),
+            Option(
+                value=ControlKind.ABUSE_MONITORING,
+                label="Abuse monitoring",
+                description="Rate limits, logging and misuse monitoring",
+            ),
+            Option(
+                value=ControlKind.PRE_RELEASE_EVALUATION,
+                label="Evaluation and red-teaming",
+                description="Evaluated or red-teamed before release, with ongoing checks",
+            ),
+            Option(
+                value=ControlKind.VENDOR_DATA_PROTECTIONS,
+                label="Vendor data protections",
+                description="The provider contract bars training on your data",
+            ),
+            Option(
+                value=ControlKind.INCIDENT_RESPONSE,
+                label="Incident response",
+                description="Rollback or kill switch and an incident process",
+            ),
+            Option(
+                value=ControlKind.USER_DISCLOSURE,
+                label="User disclosure",
+                description="People are told they interact with AI or see AI content",
+            ),
+            Option(value=ControlKind.NONE, label="None of these yet"),
+        ],
+        must_confirm=True,
+        why_asked="Confirmed controls lower the residual risk; plans do not.",
+        priority=50,
+    ),
 ]
 
 QUESTIONS_BY_FIELD: dict[str, QuestionSpec] = {spec.field: spec for spec in QUESTION_BANK}
@@ -580,6 +649,26 @@ def annex_iii_domain_present(record: IntakeRecord) -> bool:
 CONDITIONAL_MUST_CONFIRM: dict[str, ConditionalMustConfirm] = {
     "data.data_subjects": minors_present,
     "use_case.domains": annex_iii_domain_present,
+}
+
+
+# Questions whose gate is computed rather than read from one field. Controls are only worth
+# asking when the inherent risk is medium or above; a low-risk tool skips the section.
+ConditionalGate = Callable[[IntakeRecord], bool]
+
+CONTROL_GATE_TIERS: frozenset[RiskTier] = frozenset(
+    {RiskTier.MEDIUM, RiskTier.HIGH, RiskTier.CRITICAL}
+)
+
+
+def inherent_risk_at_least_medium(record: IntakeRecord) -> bool:
+    return record.assessment.inherent_risk.tier in CONTROL_GATE_TIERS
+
+
+CONDITIONAL_GATES: dict[str, ConditionalGate] = {
+    spec.field: inherent_risk_at_least_medium
+    for spec in QUESTION_BANK
+    if spec.section is Section.CONTROLS
 }
 
 

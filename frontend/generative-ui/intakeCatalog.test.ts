@@ -77,6 +77,7 @@ describe("intake catalog", () => {
   it("InterviewStep and EscalationNotice accept valid props and reject malformed ones", async () => {
     expect(await validate("InterviewStep", { intro: "Here is what we understood.", section: "project" })).toBe(true);
     expect(await validate("InterviewStep", { intro: "", section: "project" })).toBe(false);
+    expect(await validate("InterviewStep", { intro: "Controls in place.", section: "controls" })).toBe(true);
     expect(await validate("InterviewStep", { intro: "Hello.", section: "marketing" })).toBe(false);
     expect(
       await validate("EscalationNotice", {

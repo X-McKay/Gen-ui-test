@@ -69,6 +69,23 @@ export type Domain =
 export type Confidence9 = number;
 export type Source9 = string;
 export type Confirmed9 = boolean;
+export type Value10 = ControlKind[] | "unknown" | null;
+/**
+ * Controls the owner can declare. ``NONE`` is an explicit "none of these yet".
+ */
+export type ControlKind =
+  | "guardrails"
+  | "access_controls"
+  | "pii_minimisation"
+  | "abuse_monitoring"
+  | "pre_release_evaluation"
+  | "vendor_data_protections"
+  | "incident_response"
+  | "user_disclosure"
+  | "none";
+export type Confidence10 = number;
+export type Source10 = string;
+export type Confirmed10 = boolean;
 export type EuAiActClassification = "prohibited" | "high_risk" | "limited_transparency" | "minimal";
 export type AnnexIiiCategories = string[];
 /**
@@ -89,9 +106,47 @@ export type Text = string;
 export type Effect = string;
 export type Rationale = RationaleEntry[];
 export type RiskTier = "low" | "medium" | "high" | "critical";
+/**
+ * None for the overall profile
+ */
+export type Lens = string | null;
+export type RiskTier1 = "low" | "medium" | "high" | "critical";
+export type Score = number;
+export type Field1 = string;
+/**
+ * exposure, autonomy, data or impact
+ */
+export type Category = string;
+export type Points = number;
+export type Text1 = string;
+/**
+ * Enterprise risk lenses this driver counts towards
+ */
+export type Lenses = string[];
+export type Drivers = RiskDriver[];
+export type Field2 = string;
+/**
+ * A ControlKind value, or the field name for an answer
+ */
+export type Control = string;
+export type Status = "applied" | "unconfirmed" | "absent" | "unknown";
+/**
+ * Points removed from the inherent score
+ */
+export type Points1 = number;
+export type Text2 = string;
+export type Controls1 = ControlEffect[];
+export type RiskTier2 = "low" | "medium" | "high" | "critical";
+export type FloorReason = string | null;
+export type Lens1 = string;
+export type Label = string;
+/**
+ * Inherent and residual risk per enterprise lens, in a fixed order
+ */
+export type RiskLenses = RiskLens[];
 export type ApplicableFrameworks = string[];
 export type Framework = string;
-export type Text1 = string;
+export type Text3 = string;
 export type Reference = string | null;
 export type Role = ("provider" | "deployer" | "both") | null;
 export type Obligations = Obligation[];
@@ -108,6 +163,7 @@ export interface IntakeRecord {
   ai_system: AiSystem;
   data: Data;
   use_case: UseCase;
+  controls: Controls;
   assessment: Assessment;
 }
 export interface Meta {
@@ -132,6 +188,7 @@ export interface Project {
   lifecycle_stage: FieldMetaLifecycleStage;
   target_users: FieldMetaTargetUsers;
   deployment_regions: FieldMetaListStr;
+  third_party_services: FieldMetaStr;
 }
 export interface FieldMetaStr {
   value: Value;
@@ -226,9 +283,24 @@ export interface FieldMetaListDomain {
   source: Source9;
   confirmed: Confirmed9;
 }
+/**
+ * Mitigations already in place. Only confirmed controls lower the residual risk.
+ */
+export interface Controls {
+  in_place: FieldMetaListControlKind;
+}
+export interface FieldMetaListControlKind {
+  value: Value10;
+  confidence: Confidence10;
+  source: Source10;
+  confirmed: Confirmed10;
+}
 export interface Assessment {
   eu_ai_act: EuAiActAssessment;
   overall_risk_tier: RiskTier;
+  inherent_risk: RiskProfile;
+  residual_risk: RiskProfile;
+  risk_lenses: RiskLenses;
   applicable_frameworks: ApplicableFrameworks;
   obligations: Obligations;
   recommended_next_steps: RecommendedNextSteps;
@@ -244,7 +316,7 @@ export interface EuAiActAssessment {
  */
 export interface RationaleEntry {
   field: Field;
-  value: Value10;
+  value: Value11;
   article: Article;
   text: Text;
   effect: Effect;
@@ -252,12 +324,59 @@ export interface RationaleEntry {
 /**
  * The value that triggered the rule
  */
-export interface Value10 {
+export interface Value11 {
   [k: string]: unknown;
+}
+/**
+ * Inherent risk (from the answers) or residual risk (after confirmed controls), for the
+ * whole use case or for one enterprise risk lens.
+ */
+export interface RiskProfile {
+  lens: Lens;
+  tier: RiskTier1;
+  score: Score;
+  drivers: Drivers;
+  controls: Controls1;
+  floor: RiskTier2 | null;
+  floor_reason: FloorReason;
+}
+/**
+ * One answer that adds inherent risk, with the points it contributes.
+ */
+export interface RiskDriver {
+  field: Field1;
+  value: Value12;
+  category: Category;
+  points: Points;
+  text: Text1;
+  lenses: Lenses;
+}
+export interface Value12 {
+  [k: string]: unknown;
+}
+/**
+ * What one control did to the residual score, and why it did or did not count.
+ */
+export interface ControlEffect {
+  field: Field2;
+  control: Control;
+  status: Status;
+  points: Points1;
+  text: Text2;
+}
+/**
+ * One enterprise lens (data privacy, information security, operational, financial,
+ * reputational, regulatory) with its inherent and residual profile.
+ */
+export interface RiskLens {
+  lens: Lens1;
+  label: Label;
+  inherent: RiskProfile;
+  residual: RiskProfile;
 }
 export interface Obligation {
   framework: Framework;
-  text: Text1;
+  text: Text3;
   reference: Reference;
   role: Role;
 }

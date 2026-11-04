@@ -14,7 +14,7 @@ Read this first; it is the contract the tests enforce. Details live in `README.m
 | `backend/app/repo_analysis/` | Clone (allowlisted, shallow, capped), inventory, signal detectors, summariser |
 | `backend/app/export/` | JSON export, WeasyPrint PDF, webhook |
 | `backend/fixtures/repos/` | The two fixture repositories served outside production |
-| `backend/risk_review/` | Agent-based risk review (ADK, local model): agents with spec/skills/tools, workflow, evals in `backend/evals/` |
+| `backend/risk_review/` | Agent-based risk review and repository risk assessment (ADK, local model): `lane_reviewer`, `finding_verifier`, `fact_finder` agents with spec/skills/tools, workflows, evals in `backend/evals/` |
 | `frontend/generative-ui/` | The A2UI catalog (≤ 8 components) and the step form state |
 | `frontend/components/` | Review page, landing, repo form, theme, shadcn `ui/` |
 | `frontend/lib/` | `fieldCatalog.ts` (field specs, labels, controls), API client, generated `intakeTypes.ts` |
@@ -31,7 +31,9 @@ make check-schema               # schema + generated TS types are fresh
 make e2e                        # Playwright, mock model, four browser projects
 make e2e-live                   # Playwright against the live endpoint
 make risk-review                # agent-based risk review on the live model (reports/risk-review/)
+make risk-assess REPO=<path|url> # fact-based risk assessment of any repository (reports/risk-assessment/)
 make eval-risk-review           # risk-review evals: accuracy, latency, tokens vs baseline
+make eval-intake                # intake assessment evals: facts, inherent/residual tiers, false positives
 ```
 
 Use the Makefile targets rather than ad-hoc commands; they are what CI runs. Run `make
@@ -50,6 +52,10 @@ change under `frontend/generative-ui/`, `frontend/components/intake/` or `backen
 - **Every record leaf is `FieldMeta {value, confidence, source, confirmed}`**; `"unknown"` is
   legal and is never treated as `False` (`governance/field_values.py`).
 - **Question budget**: ≤ 3 questions per step, gates first, ≤ 8 typical, ≤ 15 high-risk.
+- **Inherent and residual risk are tables, not opinions** (`governance/risk_profile.py`): only a
+  *confirmed* control (`controls.in_place`, `ai_system.human_oversight`) lowers the residual;
+  an inferred one is "claimed, not confirmed". The legal floor never moves. Agents in
+  `risk_review/` record facts with evidence; they never rate risk.
 - **Schema contract**: after touching `intake/schema.py` or `question_bank.py` run
   `make export-schema` and commit `schema/intake.schema.json` and `frontend/lib/intakeTypes.ts`.
 - **Governance coverage** stays at 100 % branch coverage; every new `if` needs a test.

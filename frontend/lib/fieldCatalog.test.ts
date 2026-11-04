@@ -30,6 +30,7 @@ const QUESTION_BANK_ORDER = [
   "project.team",
   "project.business_unit",
   "project.deployment_regions",
+  "project.third_party_services",
   "ai_system.model_source",
   "ai_system.autonomy_level",
   "ai_system.human_oversight",
@@ -53,6 +54,7 @@ const QUESTION_BANK_ORDER = [
   "use_case.remote_biometric_id_public_spaces",
   "use_case.manipulative_or_subliminal",
   "use_case.untargeted_facial_scraping",
+  "controls.in_place",
 ] as const;
 
 const CONTROLS = new Set(["choice", "multi", "yes_no", "text"]);
@@ -94,7 +96,26 @@ describe("question bank coverage", () => {
   it("marks the sensitive gates as must-confirm", () => {
     expect(MUST_CONFIRM_FIELDS.has("use_case.domains")).toBe(true);
     expect(MUST_CONFIRM_FIELDS.has("data.biometric_identification")).toBe(true);
+    expect(MUST_CONFIRM_FIELDS.has("controls.in_place")).toBe(true);
     expect(MUST_CONFIRM_FIELDS.has("project.name")).toBe(false);
+  });
+
+  it("lists the controls question in its own section, last, with the backend's option values in order", () => {
+    expect(SECTION_ORDER[SECTION_ORDER.length - 1]).toBe("controls");
+    expect(SECTION_FIELDS.controls).toEqual(["controls.in_place"]);
+    expect(FIELD_CONTROLS["controls.in_place"]).toBe("multi");
+    expect(FIELD_OPTIONS["controls.in_place"].map((option) => option.value)).toEqual([
+      "guardrails",
+      "access_controls",
+      "pii_minimisation",
+      "abuse_monitoring",
+      "pre_release_evaluation",
+      "vendor_data_protections",
+      "incident_response",
+      "user_disclosure",
+      "none",
+    ]);
+    expect(optionLabel("controls.in_place", "none")).toBe("None of these yet");
   });
 });
 
@@ -102,6 +123,7 @@ describe("label helpers", () => {
   it("falls back to a readable last segment for unknown paths", () => {
     expect(fieldLabel("use_case.domains")).toBe("Domains");
     expect(fieldLabel("assessment.overall_risk_tier")).toBe("Overall risk tier");
+    expect(fieldLabel("controls.in_place")).toBe("Controls in place");
   });
 
   it("scopes option labels to the field and falls back to the raw value", () => {

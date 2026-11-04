@@ -172,6 +172,70 @@
       background: var(--paper);
     }
 
+    /* Inherent and residual risk -------------------------------------------- */
+    .risk-profiles {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10pt;
+      margin: 0 0 10pt;
+    }
+    .risk-profile {
+      border: 1pt solid var(--rule);
+      border-left: 5pt solid var(--tier-color, var(--rule));
+      background: var(--panel);
+      padding: 8pt 10pt;
+      break-inside: avoid;
+    }
+    .risk-profile-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8pt;
+      flex-wrap: wrap;
+    }
+    .risk-profile h3 { margin: 0; }
+    .risk-score {
+      font-size: 9.5pt;
+      color: var(--ink-muted);
+      white-space: nowrap;
+    }
+    .risk-score strong { color: var(--ink); font-size: 11pt; }
+    .risk-floor {
+      margin: 4pt 0 0;
+      font-size: 9pt;
+      color: var(--ink-muted);
+    }
+    .risk-note { margin: 0 0 8pt; }
+    table.answers tbody th.lens { width: 22%; color: var(--ink); }
+    table.answers td.lens-tier { width: 19%; white-space: nowrap; }
+    table.answers td.lens-tier .lens-score {
+      margin-left: 4pt;
+      font-size: 9.5pt;
+      color: var(--ink-muted);
+    }
+    table.answers td.lens-drivers { color: var(--ink-muted); font-size: 9.5pt; }
+    table.answers th.points,
+    table.answers td.points {
+      width: 12%;
+      text-align: right;
+      white-space: nowrap;
+    }
+    table.answers tbody th.driver,
+    table.answers tbody th.control { width: 40%; color: var(--ink); }
+    table.answers .category {
+      display: inline-block;
+      margin-left: 4pt;
+      padding: 0 4pt;
+      border: 0.6pt solid var(--rule);
+      border-radius: 3pt;
+      font-size: 8.5pt;
+      color: var(--ink-muted);
+    }
+    table.answers tr[data-status="absent"] td,
+    table.answers tr[data-status="unknown"] td { color: var(--ink-muted); }
+    table.answers tr[data-status="unconfirmed"] td.status { color: var(--tier-limited); }
+    table.answers tr[data-status="applied"] td.status { color: var(--tier-minimal); font-weight: 650; }
+
     /* Answer tables -------------------------------------------------------- */
     table.answers {
       width: 100%;
@@ -314,6 +378,102 @@
         {% if frameworks %}{{ frameworks | join(", ") }}{% else %}None identified{% endif %}
       </dd>
     </dl>
+  </section>
+
+  <section class="risk" aria-labelledby="risk-heading">
+    <h2 id="risk-heading">Inherent and residual risk</h2>
+    <div class="risk-profiles">
+      {% for profile in (inherent_risk, residual_risk) %}
+      <div class="risk-profile {{ profile.css_class }}" data-risk-profile="{{ profile.key }}">
+        <div class="risk-profile-head">
+          <h3>{{ profile.label }}</h3>
+          <span class="risk-pill {{ profile.css_class }}" data-risk-tier="{{ profile.tier }}">{{ profile.tier_label }}</span>
+          <span class="risk-score">Score <strong>{{ profile.score }}</strong></span>
+        </div>
+        {% if profile.floor_reason %}
+        <p class="risk-floor" data-risk-floor="{{ profile.floor }}">Floor: {{ profile.floor_reason }}.</p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <p class="risk-note muted small">
+      Inherent risk scores the use case as described. Residual risk is what remains after the
+      controls the requester has confirmed; a control that is only claimed, or was read from the
+      repository, does not lower it until it is confirmed.
+    </p>
+
+    {% if risk_lenses %}
+    <h3 id="risk-lenses-heading">By lens</h3>
+    <table class="answers risk-lenses" aria-labelledby="risk-lenses-heading">
+      <thead>
+        <tr>
+          <th scope="col">Lens</th>
+          <th scope="col">Inherent</th>
+          <th scope="col">Residual</th>
+          <th scope="col">Drivers</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in risk_lenses %}
+        <tr data-lens="{{ row.lens }}">
+          <th scope="row" class="lens">{{ row.label }}</th>
+          {% for profile in (row.inherent, row.residual) %}
+          <td class="lens-tier" data-lens-profile="{{ profile.key }}"><span class="risk-pill {{ profile.css_class }}" data-risk-tier="{{ profile.tier }}">{{ profile.tier_label }}</span><span class="lens-score">{{ profile.score }}</span></td>
+          {% endfor %}
+          <td class="lens-drivers">{{ row.drivers }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <h3 id="risk-drivers-heading">Drivers</h3>
+    {% if risk_drivers %}
+    <table class="answers risk-drivers" aria-labelledby="risk-drivers-heading">
+      <thead>
+        <tr>
+          <th scope="col">Driver</th>
+          <th scope="col">Answer</th>
+          <th scope="col" class="points">Points</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for driver in risk_drivers %}
+        <tr data-field="{{ driver.field }}">
+          <th scope="row" class="driver">{{ driver.text }}<span class="category">{{ driver.category }}</span></th>
+          <td>{{ driver.label }} — {{ driver.value }}</td>
+          <td class="points">+{{ driver.points }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No risk drivers: the answers given add no points.</p>
+    {% endif %}
+
+    <h3 id="risk-controls-heading">Controls</h3>
+    {% if risk_controls %}
+    <table class="answers risk-controls" aria-labelledby="risk-controls-heading">
+      <thead>
+        <tr>
+          <th scope="col">Control</th>
+          <th scope="col">Status</th>
+          <th scope="col" class="points">Points removed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for control in risk_controls %}
+        <tr data-field="{{ control.field }}" data-control="{{ control.control }}" data-status="{{ control.status }}">
+          <th scope="row" class="control">{{ control.label }}<div class="answer-ref">{{ control.text }}</div></th>
+          <td class="status">{{ control.status_label }}</td>
+          <td class="points">{% if control.points %}−{{ control.points }}{% else %}0{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="empty">No controls assessed.</p>
+    {% endif %}
   </section>
 
   {% for section in sections %}

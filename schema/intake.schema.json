@@ -51,6 +51,20 @@
           "$ref": "#/$defs/RiskTier",
           "default": "low"
         },
+        "inherent_risk": {
+          "$ref": "#/$defs/RiskProfile"
+        },
+        "residual_risk": {
+          "$ref": "#/$defs/RiskProfile"
+        },
+        "risk_lenses": {
+          "description": "Inherent and residual risk per enterprise lens, in a fixed order",
+          "items": {
+            "$ref": "#/$defs/RiskLens"
+          },
+          "title": "Risk Lenses",
+          "type": "array"
+        },
         "applicable_frameworks": {
           "items": {
             "type": "string"
@@ -86,6 +100,9 @@
       "required": [
         "eu_ai_act",
         "overall_risk_tier",
+        "inherent_risk",
+        "residual_risk",
+        "risk_lenses",
         "applicable_frameworks",
         "obligations",
         "recommended_next_steps",
@@ -100,6 +117,80 @@
       ],
       "title": "AutonomyLevel",
       "type": "string"
+    },
+    "ControlEffect": {
+      "additionalProperties": false,
+      "description": "What one control did to the residual score, and why it did or did not count.",
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "control": {
+          "description": "A ControlKind value, or the field name for an answer",
+          "title": "Control",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "applied",
+            "unconfirmed",
+            "absent",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "points": {
+          "description": "Points removed from the inherent score",
+          "minimum": 0,
+          "title": "Points",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "control",
+        "status",
+        "points",
+        "text"
+      ],
+      "title": "ControlEffect",
+      "type": "object"
+    },
+    "ControlKind": {
+      "description": "Controls the owner can declare. ``NONE`` is an explicit \"none of these yet\".",
+      "enum": [
+        "guardrails",
+        "access_controls",
+        "pii_minimisation",
+        "abuse_monitoring",
+        "pre_release_evaluation",
+        "vendor_data_protections",
+        "incident_response",
+        "user_disclosure",
+        "none"
+      ],
+      "title": "ControlKind",
+      "type": "string"
+    },
+    "Controls": {
+      "additionalProperties": false,
+      "description": "Mitigations already in place. Only confirmed controls lower the residual risk.",
+      "properties": {
+        "in_place": {
+          "$ref": "#/$defs/FieldMeta_list_ControlKind__"
+        }
+      },
+      "title": "Controls",
+      "type": "object",
+      "required": [
+        "in_place"
+      ]
     },
     "Data": {
       "additionalProperties": false,
@@ -439,6 +530,56 @@
         }
       },
       "title": "FieldMeta[bool]",
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
+    },
+    "FieldMeta_list_ControlKind__": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ControlKind"
+              },
+              "type": "array"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[list[ControlKind]]",
       "type": "object",
       "required": [
         "value",
@@ -909,6 +1050,9 @@
         },
         "deployment_regions": {
           "$ref": "#/$defs/FieldMeta_list_str__"
+        },
+        "third_party_services": {
+          "$ref": "#/$defs/FieldMeta_str_"
         }
       },
       "title": "Project",
@@ -921,7 +1065,8 @@
         "business_unit",
         "lifecycle_stage",
         "target_users",
-        "deployment_regions"
+        "deployment_regions",
+        "third_party_services"
       ]
     },
     "RationaleEntry": {
@@ -962,6 +1107,155 @@
       ],
       "title": "RationaleEntry",
       "type": "object"
+    },
+    "RiskDriver": {
+      "additionalProperties": false,
+      "description": "One answer that adds inherent risk, with the points it contributes.",
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value"
+        },
+        "category": {
+          "description": "exposure, autonomy, data or impact",
+          "title": "Category",
+          "type": "string"
+        },
+        "points": {
+          "minimum": 0,
+          "title": "Points",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "lenses": {
+          "description": "Enterprise risk lenses this driver counts towards",
+          "items": {
+            "type": "string"
+          },
+          "title": "Lenses",
+          "type": "array"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "category",
+        "points",
+        "text",
+        "lenses"
+      ],
+      "title": "RiskDriver",
+      "type": "object"
+    },
+    "RiskLens": {
+      "additionalProperties": false,
+      "description": "One enterprise lens (data privacy, information security, operational, financial,\nreputational, regulatory) with its inherent and residual profile.",
+      "properties": {
+        "lens": {
+          "title": "Lens",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "inherent": {
+          "$ref": "#/$defs/RiskProfile"
+        },
+        "residual": {
+          "$ref": "#/$defs/RiskProfile"
+        }
+      },
+      "required": [
+        "lens",
+        "label",
+        "inherent",
+        "residual"
+      ],
+      "title": "RiskLens",
+      "type": "object"
+    },
+    "RiskProfile": {
+      "additionalProperties": false,
+      "description": "Inherent risk (from the answers) or residual risk (after confirmed controls), for the\nwhole use case or for one enterprise risk lens.",
+      "properties": {
+        "lens": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None for the overall profile",
+          "title": "Lens"
+        },
+        "tier": {
+          "$ref": "#/$defs/RiskTier",
+          "default": "low"
+        },
+        "score": {
+          "default": 0,
+          "title": "Score",
+          "type": "integer"
+        },
+        "drivers": {
+          "items": {
+            "$ref": "#/$defs/RiskDriver"
+          },
+          "title": "Drivers",
+          "type": "array"
+        },
+        "controls": {
+          "items": {
+            "$ref": "#/$defs/ControlEffect"
+          },
+          "title": "Controls",
+          "type": "array"
+        },
+        "floor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RiskTier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "floor_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Floor Reason"
+        }
+      },
+      "title": "RiskProfile",
+      "type": "object",
+      "required": [
+        "lens",
+        "tier",
+        "score",
+        "drivers",
+        "controls",
+        "floor",
+        "floor_reason"
+      ]
     },
     "RiskTier": {
       "enum": [
@@ -1065,6 +1359,9 @@
     "use_case": {
       "$ref": "#/$defs/UseCase"
     },
+    "controls": {
+      "$ref": "#/$defs/Controls"
+    },
     "assessment": {
       "$ref": "#/$defs/Assessment"
     }
@@ -1075,6 +1372,7 @@
     "ai_system",
     "data",
     "use_case",
+    "controls",
     "assessment"
   ],
   "title": "IntakeRecord",

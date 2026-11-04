@@ -128,4 +128,26 @@ def extract_heuristically(text: str) -> list[ExtractedField]:
         r"recruiter (reads|reviews|decides)",
     ):
         add("ai_system.human_oversight", True, 0.85, "human review")
+
+    # Controls count only when described as in place; a plan is not a control.
+    planned = _has(text, r"\b(plan|planning|intend|will add|roadmap|considering|propose)")
+    control_patterns: dict[str, tuple[str, ...]] = {
+        "guardrails": (r"guardrail", r"content filter", r"prompt.injection", r"output filter"),
+        "access_controls": (r"\bSSO\b", r"authenticat", r"role.based access"),
+        "pii_minimisation": (r"redact", r"pseudonymi", r"data minimi"),
+        "abuse_monitoring": (r"rate.limit", r"abuse monitor", r"misuse monitor"),
+        "pre_release_evaluation": (r"red.team", r"evaluation suite", r"evaluated"),
+        "vendor_data_protections": (
+            r"zero.data.retention",
+            r"not (used|use) (for|to) train",
+            r"\bDPA\b",
+        ),
+        "incident_response": (r"kill switch", r"rollback", r"incident response"),
+        "user_disclosure": (r"disclos", r"labell?ed as AI", r"told they are talking"),
+    }
+    in_place = [
+        kind for kind, patterns in control_patterns.items() if not planned and _has(text, *patterns)
+    ]
+    if in_place:
+        add("controls.in_place", in_place, 0.85, "controls described as in place")
     return out

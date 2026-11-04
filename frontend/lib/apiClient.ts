@@ -43,7 +43,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 /** A question spec as returned by the backend (mirrors `question_bank.QuestionSpec`). */
 export interface QuestionSpecDto {
   field: string;
-  section: "project" | "ai_system" | "data" | "use_case";
+  section: "project" | "ai_system" | "data" | "use_case" | "controls";
   label: string;
   prompt: string;
   control: "choice" | "multi" | "yes_no" | "text";
@@ -65,11 +65,11 @@ export interface AssumptionDto {
   confidence: number;
   source: string;
   must_confirm: boolean;
-  section: "project" | "ai_system" | "data" | "use_case";
+  section: "project" | "ai_system" | "data" | "use_case" | "controls";
 }
 
 export interface SectionProgressDto {
-  section: "project" | "ai_system" | "data" | "use_case";
+  section: "project" | "ai_system" | "data" | "use_case" | "controls";
   label: string;
   total: number;
   done: number;
@@ -82,7 +82,7 @@ export interface CurrentStepDto {
   surface_id: string;
   kind: "interview" | "findings" | "escalation" | "done";
   intro?: string;
-  section?: "project" | "ai_system" | "data" | "use_case";
+  section?: "project" | "ai_system" | "data" | "use_case" | "controls";
   assumptions: AssumptionDto[];
   questions: QuestionSpecDto[];
   progress: SectionProgressDto[];

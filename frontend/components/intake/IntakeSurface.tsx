@@ -18,6 +18,7 @@ const EMPTY_PROGRESS: SectionProgressDto[] = [
   { section: "ai_system", label: "AI system", total: 1, done: 0, active: false },
   { section: "data", label: "Data", total: 1, done: 0, active: false },
   { section: "use_case", label: "Use case", total: 1, done: 0, active: false },
+  { section: "controls", label: "Controls", total: 1, done: 0, active: false },
 ];
 
 function SurfaceSkeleton() {

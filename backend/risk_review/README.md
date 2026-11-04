@@ -104,3 +104,23 @@ add one only for qualities the deterministic evaluators cannot express (for exam
 3. Plant at least one defect and one decoy in `evals/risk_review/fixtures/planted/` and add
    a smoke case. Run `make eval-risk-review EVAL_ARGS="--case <id> --repeats 3"`.
 4. Bump the agent `version` in the spec; behaviour changed.
+
+
+## Repository risk assessment (`assess`)
+
+`uv run python -m risk_review assess --repo PATH|URL` (or `make risk-assess REPO=...`) runs the
+**fact finder** instead of the defect reviewer. It is the same runtime (spec, instruction, one
+lane skill, two tools, budgets, trace) with a different job: establish the governance facts
+the intake needs, each grounded in a line of the repository.
+
+| Piece | Where |
+| --- | --- |
+| Agent spec, instruction, lane skills | `agents/fact_finder/{agent.yaml,instructions/system.md,skills/*/SKILL.md}` |
+| Delivery tool | `agents/fact_finder/tools/record_facts.py`: value validated against the intake record (coerced and set exactly as the product does), every evidence quote checked against the file, facts accumulate per field |
+| Workflow | `workflows/assess.py`: lanes in parallel, facts merged (the owning lane wins, then confidence; disagreements kept), record built with `source="repo:<file>"`, rules engine run, residual shown unconfirmed and "if confirmed", open questions listed |
+| Report | `observability/report.py::render_assessment_markdown` and `assessment.json` |
+| Eval | `evals/intake_assessment` suite `repos`: the fixture repositories with gold facts, scored like description extraction, with agent-scale operational thresholds in `baselines/repos.json` |
+
+The lanes are `purpose-and-users`, `ai-usage`, `data-and-privacy`, `third-party-services`
+and `controls-in-code`. A sixth lane is a new skill directory plus its entry in
+`FIELD_OWNERS` in `workflows/assess.py`.

@@ -35,3 +35,4 @@ frontend/playwright/.cache/
 # Risk review and eval output
 reports/
 backend/evals/risk_review/experiments/*/
+backend/evals/intake_assessment/experiments/*/

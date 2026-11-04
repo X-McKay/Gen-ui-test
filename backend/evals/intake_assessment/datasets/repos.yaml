@@ -1,0 +1,60 @@
+# Repository cases: the fact-finder agents read the repository; the gold facts are what a
+# careful reviewer records from its documents and code. Paths are relative to backend/.
+# Operational thresholds for this suite live in baselines/repos.json (agent runs cost far
+# more than one extraction).
+
+cases:
+  - id: repo-hr-screening
+    tags: [repository, genai, hr, annex-iii]
+    repository: fixtures/repos/hr_screening
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      ai_system.model_types: [llm]
+      project.target_users: internal
+      project.lifecycle_stage: production
+      project.deployment_regions: [eu]
+      use_case.domains: [hr_employment]
+      use_case.affects_legal_or_significant_effects: true
+      use_case.generates_synthetic_content: true
+      use_case.interacts_directly_with_people: false
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      data.special_category_data: []
+      data.biometric_identification: false
+      data.data_sources: [user_upload, internal_db]
+      use_case.social_scoring: false
+      use_case.emotion_recognition: false
+      controls.in_place: [access_controls]
+    absent: [data.trains_on_personal_data]
+    inherent: high
+    residual: medium
+    note: README states internal recruiters, GPT-4 via API, production in eu-west-1, recruiter review; cv_parser extracts e-mail, phone and date of birth; retention.md restricts reads to the TA team.
+
+  - id: repo-log-search
+    tags: [repository, genai, internal, no-pii]
+    repository: fixtures/repos/log_search
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: open_weights
+      project.target_users: internal
+      project.lifecycle_stage: pilot
+      use_case.domains: [other]
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      use_case.affects_legal_or_significant_effects: false
+      ai_system.autonomy_level: assistive
+      data.processes_personal_data: false
+      data.biometric_identification: false
+      data.data_sources: [logs]
+      use_case.social_scoring: false
+      use_case.emotion_recognition: false
+      controls.in_place: [access_controls]
+    absent: [data.retention_policy]
+    inherent: low
+    residual: low
+    note: README states no personal data (hashed ids, IPs dropped), self-hosted vLLM with OpenAI fallback, platform team behind SSO, pilot.

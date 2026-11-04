@@ -38,10 +38,15 @@ def schema_path() -> Path:
 def build_high_risk_record(intake_id: str = "t"):  # type: ignore[no-untyped-def]
     """A realistic, partially unknown HR screening intake with an assessment attached."""
     from app.intake.schema import (
+        ControlEffect,
+        ControlKind,
         EuAiActClassification,
         IntakeMode,
         Obligation,
         RationaleEntry,
+        RiskDriver,
+        RiskLens,
+        RiskProfile,
         RiskTier,
         new_record,
     )
@@ -107,6 +112,17 @@ def build_high_risk_record(intake_id: str = "t"):  # type: ignore[no-untyped-def
         confidence=1.0,
         confirmed=True,
     )
+    record.set_field(
+        "ai_system.human_oversight", True, source="user", confidence=1.0, confirmed=True
+    )
+    # Inferred from the repository and not yet confirmed: a claim, so it lowers nothing.
+    record.set_field(
+        "controls.in_place",
+        [ControlKind.ACCESS_CONTROLS, ControlKind.GUARDRAILS],
+        source="repo:app/auth.py",
+        confidence=0.7,
+        confirmed=False,
+    )
 
     assessment = record.assessment
     assessment.eu_ai_act.classification = EuAiActClassification.HIGH_RISK
@@ -121,6 +137,143 @@ def build_high_risk_record(intake_id: str = "t"):  # type: ignore[no-untyped-def
         )
     ]
     assessment.overall_risk_tier = RiskTier.HIGH
+    drivers = [
+        RiskDriver(
+            field="ai_system.autonomy_level",
+            value="recommends",
+            category="autonomy",
+            points=1,
+            text="It recommends; a person decides",
+            lenses=["operational"],
+        ),
+        RiskDriver(
+            field="data.processes_personal_data",
+            value=True,
+            category="data",
+            points=2,
+            text="It processes personal data",
+            lenses=["data_privacy", "regulatory"],
+        ),
+        RiskDriver(
+            field="data.data_subjects",
+            value=["employees", "minors"],
+            category="data",
+            points=2,
+            text="Minors are among the data subjects",
+            lenses=["data_privacy", "reputational"],
+        ),
+        RiskDriver(
+            field="use_case.affects_legal_or_significant_effects",
+            value=True,
+            category="impact",
+            points=3,
+            text="Outputs affect rights, access or significant decisions",
+            lenses=["regulatory", "reputational"],
+        ),
+        RiskDriver(
+            field="use_case.domains",
+            value=["hr_employment"],
+            category="impact",
+            points=2,
+            text="It operates in an Annex III area",
+            lenses=["regulatory"],
+        ),
+    ]
+    human_oversight = ControlEffect(
+        field="ai_system.human_oversight",
+        control="ai_system.human_oversight",
+        status="applied",
+        points=2,  # two mitigations on the same control, aggregated by the engine
+        text="A person reviews or can override outputs",
+    )
+    assessment.inherent_risk = RiskProfile(tier=RiskTier.HIGH, score=10, drivers=drivers)
+    assessment.residual_risk = RiskProfile(
+        tier=RiskTier.MEDIUM,
+        score=8,
+        drivers=drivers,
+        controls=[
+            human_oversight,
+            ControlEffect(
+                field="controls.in_place",
+                control="guardrails",
+                status="unconfirmed",
+                points=0,
+                text="Input and output guardrails are in place",
+            ),
+            ControlEffect(
+                field="controls.in_place",
+                control="pii_minimisation",
+                status="absent",
+                points=0,
+                text="Personal data is minimised before the model",
+            ),
+            ControlEffect(
+                field="controls.in_place",
+                control="access_controls",
+                status="unconfirmed",
+                points=0,
+                text="Access is authenticated and authorised",
+            ),
+            ControlEffect(
+                field="controls.in_place",
+                control="vendor_data_protections",
+                status="unknown",
+                points=0,
+                text="Provider may not train on the data",
+            ),
+        ],
+        floor=RiskTier.MEDIUM,
+        floor_reason="Annex III obligations remain whatever controls are in place",
+    )
+    # Three of the six lenses, in the engine's order; one with no driver at all.
+    privacy_drivers = [drivers[1], drivers[2]]
+    regulatory_drivers = [drivers[1], drivers[3], drivers[4]]
+    assessment.risk_lenses = [
+        RiskLens(
+            lens="data_privacy",
+            label="Data and privacy",
+            inherent=RiskProfile(
+                lens="data_privacy", tier=RiskTier.MEDIUM, score=4, drivers=privacy_drivers
+            ),
+            residual=RiskProfile(
+                lens="data_privacy",
+                tier=RiskTier.MEDIUM,
+                score=4,
+                drivers=privacy_drivers,
+                controls=[
+                    ControlEffect(
+                        field="controls.in_place",
+                        control="pii_minimisation",
+                        status="absent",
+                        points=0,
+                        text="Personal data is minimised before the model",
+                    )
+                ],
+            ),
+        ),
+        RiskLens(
+            lens="financial",
+            label="Financial",
+            inherent=RiskProfile(lens="financial"),
+            residual=RiskProfile(lens="financial"),
+        ),
+        RiskLens(
+            lens="regulatory",
+            label="Regulatory",
+            inherent=RiskProfile(
+                lens="regulatory", tier=RiskTier.HIGH, score=7, drivers=regulatory_drivers
+            ),
+            residual=RiskProfile(
+                lens="regulatory",
+                tier=RiskTier.MEDIUM,
+                score=5,
+                drivers=regulatory_drivers,
+                controls=[human_oversight],
+                floor=RiskTier.MEDIUM,
+                floor_reason="Annex III obligations remain whatever controls are in place",
+            ),
+        ),
+    ]
     assessment.applicable_frameworks = ["EU AI Act", "GDPR"]
     assessment.obligations = [
         Obligation(

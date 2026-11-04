@@ -110,7 +110,13 @@ test.describe("interview controls", () => {
     // The live model may infer every field from the description and ask nothing.
     if (!LIVE) expect(run.answers.length).toBeGreaterThan(0);
     if (!LIVE) {
-      expect([...kinds].sort()).toEqual(["ChoiceQuestion", "ShortTextQuestion", "YesNoQuestion"]);
+      // The scripted plan ends with the controls question, a multi-select.
+      expect([...kinds].sort()).toEqual([
+        "ChoiceQuestion",
+        "MultiSelectQuestion",
+        "ShortTextQuestion",
+        "YesNoQuestion",
+      ]);
     }
   });
 

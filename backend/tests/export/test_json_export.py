@@ -49,6 +49,7 @@ def test_export_has_schema_pointer_first(high_risk_record: IntakeRecord) -> None
         "ai_system",
         "data",
         "use_case",
+        "controls",
         "assessment",
     }
 
@@ -72,6 +73,29 @@ def test_export_keeps_provenance(high_risk_record: IntakeRecord) -> None:
     assert isinstance(assessment, dict)
     assert assessment["eu_ai_act"]["classification"] == "high_risk"
     assert assessment["open_questions"] == ["data.special_category_data"]
+    controls = payload["controls"]
+    assert isinstance(controls, dict)
+    assert controls["in_place"] == {
+        "value": ["access_controls", "guardrails"],
+        "confidence": 0.7,
+        "source": "repo:app/auth.py",
+        "confirmed": False,
+    }
+    assert assessment["inherent_risk"]["tier"] == "high"
+    assert assessment["residual_risk"]["floor"] == "medium"
+    assert [effect["status"] for effect in assessment["residual_risk"]["controls"]] == [
+        "applied",
+        "unconfirmed",
+        "absent",
+        "unconfirmed",
+        "unknown",
+    ]
+    assert [lens["lens"] for lens in assessment["risk_lenses"]] == [
+        "data_privacy",
+        "financial",
+        "regulatory",
+    ]
+    assert assessment["risk_lenses"][2]["residual"]["floor"] == "medium"
 
 
 def test_export_matches_model_dump(high_risk_record: IntakeRecord) -> None:

@@ -29,7 +29,7 @@ GOVERNANCE_COV := --cov=app/governance --cov-report=term-missing --cov-fail-unde
 
 .PHONY: help setup doctor install install-browsers dev dev-mock backend frontend lint format \
         typecheck test test-backend test-frontend export-schema check-schema e2e e2e-live e2e-ui \
-        build docker-up docker-down clean risk-review eval-risk-review
+        build docker-up docker-down clean risk-review risk-assess eval-risk-review eval-intake
 
 help: ## Show this help (default)
 	@printf "\nAI Governance Intake — make targets\n\n"
@@ -162,8 +162,14 @@ EVAL_ARGS ?=
 risk-review: ## Agent-based risk review of this repository on the live model (reports/risk-review/)
 	cd $(BACKEND_DIR) && $(UV) run python -m risk_review $(RISK_REVIEW_ARGS)
 
+risk-assess: ## Fact-based risk assessment of a repository (REPO=path or https URL; writes reports/risk-assessment/)
+	cd $(BACKEND_DIR) && $(UV) run python -m risk_review assess --repo "$(REPO)" $(RISK_ASSESS_ARGS)
+
 eval-risk-review: ## Run the risk-review evals (accuracy, latency, tokens) against the baseline
 	cd $(BACKEND_DIR) && $(UV) run python -m evals.risk_review run $(EVAL_ARGS)
+
+eval-intake: ## Intake assessment evals: facts, inherent and residual tiers, false positives (EVAL_ARGS="--suite facts --repeats 2")
+	cd $(BACKEND_DIR) && $(UV) run python -m evals.intake_assessment run $(EVAL_ARGS)
 
 # ---- Build and containers ------------------------------------------------------------------
 

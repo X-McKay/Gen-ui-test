@@ -1,0 +1,686 @@
+# Use-case descriptions with what a careful reviewer would record from them.
+#
+# Groups:
+#   genai-*      generative AI systems, internal and external, with and without controls
+#   ml-*         classical machine learning, no generative model
+#   noai-*       no AI at all, including descriptions that *mention* AI-ish words
+#   pii-*        personal data present, absent, anonymised, special categories, minors
+#   bio-*        biometrics, and words that sound biometric but are not
+#   plan-*       controls that are planned, not in place (must not count)
+#   prohibited-* practices the Act bans
+#
+# `inherent` and `residual` are the tiers the engine derives from `expected` once everything is
+# confirmed; the loader checks them, so a wrong tier here fails fast.
+
+cases:
+  # --- Generative AI ----------------------------------------------------------------------
+  - id: genai-public-chatbot-guardrails
+    tags: [genai, external, controls]
+    description: >
+      Our retail bank is launching a support chatbot on the public website that anyone can
+      use without logging in. It answers questions about products, fees and opening hours
+      using Anthropic's Claude through the API. It is live in Germany. Every response goes
+      through prompt-injection and content filters, visitors see a banner saying they are
+      talking to an AI, the endpoint is rate-limited and monitored for abuse, and any account
+      numbers or names a visitor types are redacted before the conversation is sent to the
+      model. Support agents review flagged conversations daily.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: public
+      project.lifecycle_stage: production
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      use_case.domains: [other]
+      data.processes_personal_data: true
+      data.data_subjects: [public]
+      ai_system.human_oversight: true
+      ai_system.autonomy_level: assistive
+      use_case.affects_legal_or_significant_effects: false
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+      controls.in_place: [guardrails, user_disclosure, abuse_monitoring, pii_minimisation]
+    absent: [data.retention_policy, ai_system.fine_tuned_or_trained]
+    inherent: high
+    residual: low
+    note: High exposure (public, talks to people, generates, third party, personal data); controls bring it to low.
+
+  - id: genai-public-chatbot-no-controls
+    tags: [genai, external, no-controls]
+    description: >
+      A public-facing shopping assistant on our e-commerce site. Visitors chat with it to find
+      products and it writes recommendations using GPT-4o via the OpenAI API. Anyone can use
+      it without logging in. We have not added any filtering or monitoring yet and nobody
+      reviews the conversations.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: public
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      ai_system.human_oversight: false
+      use_case.affects_legal_or_significant_effects: false
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      controls.in_place: [none]
+    absent: [data.processes_personal_data, project.lifecycle_stage]
+    inherent: high
+    residual: high
+
+  - id: genai-internal-copilot
+    tags: [genai, internal]
+    description: >
+      An internal coding assistant for our engineering team, built on a self-hosted Llama
+      model. Engineers ask it to explain code and draft tests inside the IDE. It only sees
+      source code from our repositories, no customer data. Engineers decide what to keep.
+      Access is through company SSO.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: open_weights
+      project.target_users: internal
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      data.processes_personal_data: false
+      use_case.affects_legal_or_significant_effects: false
+      data.biometric_identification: false
+      use_case.social_scoring: false
+      controls.in_place: [access_controls]
+    absent: [project.lifecycle_stage, data.retention_policy]
+    inherent: low
+    residual: low
+
+  - id: genai-hr-screening-pilot
+    tags: [genai, hr, annex-iii]
+    description: >
+      An internal tool for the recruiting team that drafts candidate summaries from uploaded
+      CVs with an LLM via the OpenAI API and suggests a fit score for the role. Recruiters
+      read the summary before deciding who to invite to interview. It is a pilot with two
+      hiring teams in the EU. CVs are kept in the applicant tracking system and deleted after
+      six months.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: internal
+      project.lifecycle_stage: pilot
+      use_case.domains: [hr_employment]
+      use_case.affects_legal_or_significant_effects: true
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      ai_system.human_oversight: true
+      ai_system.autonomy_level: recommends
+      use_case.generates_synthetic_content: true
+      use_case.social_scoring: false
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+    absent: [controls.in_place]
+    inherent: high
+    residual: high
+    note: Recruiter review removes autonomy and some impact; without other controls it stays high.
+
+  - id: genai-marketing-copy
+    tags: [genai, internal]
+    description: >
+      Marketing uses a Claude-based tool to draft product descriptions and newsletter copy
+      from a brief. A copywriter edits everything before it is published. The brief contains
+      product facts only; no customer information is involved. It has been in production for
+      a year.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      project.target_users: internal
+      project.lifecycle_stage: production
+      use_case.generates_synthetic_content: true
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      data.processes_personal_data: false
+      use_case.affects_legal_or_significant_effects: false
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+    absent: [controls.in_place, ai_system.model_source]
+    inherent: low
+    residual: low
+
+  - id: genai-autonomous-refunds
+    tags: [genai, external, autonomy]
+    description: >
+      A customer-service agent built on GPT-4o that reads refund requests from customers of
+      our online store and issues refunds up to 200 euros itself, without an employee in the
+      loop. Customers interact with it through the help centre chat. It has access to order
+      history and contact details. There is a kill switch and we red-teamed it before launch;
+      it is in production for customers in France.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: external
+      project.lifecycle_stage: production
+      use_case.interacts_directly_with_people: true
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: false
+      data.processes_personal_data: true
+      data.data_subjects: [customers]
+      use_case.affects_legal_or_significant_effects: false
+      data.biometric_identification: false
+      use_case.social_scoring: false
+      controls.in_place: [incident_response, pre_release_evaluation]
+    absent: [data.retention_policy]
+    inherent: high
+    residual: high
+    note: Acts on its own with nobody reviewing; a kill switch and a red-team do not change that.
+
+  - id: genai-medical-triage
+    tags: [genai, health, annex-iii, special-category]
+    description: >
+      A symptom-checker chatbot for patients of our clinic network, built on a fine-tuned
+      open-weights model. Patients describe symptoms on the patient portal and it suggests
+      whether to book a GP, go to urgent care or wait. Nurses review the suggestions for
+      urgent cases only. It processes health information about patients, including children.
+      It is a proof of concept.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: open_weights
+      ai_system.fine_tuned_or_trained: true
+      project.target_users: external
+      project.lifecycle_stage: poc
+      use_case.domains: [medical_or_safety_component]
+      use_case.interacts_directly_with_people: true
+      ai_system.autonomy_level: recommends
+      data.processes_personal_data: true
+      data.special_category_data: [health]
+      data.data_subjects: [customers, minors]
+      use_case.affects_legal_or_significant_effects: true
+      data.biometric_identification: false
+      use_case.social_scoring: false
+    absent: [controls.in_place, data.retention_policy]
+    inherent: critical
+    residual: critical
+    note: Health data about children, patient-facing, no controls described.
+
+  # --- Classical machine learning -----------------------------------------------------------
+  - id: ml-fraud-scoring
+    tags: [ml, external, decides]
+    description: >
+      A gradient-boosted fraud model we trained in-house on three years of card transactions.
+      It scores each payment in real time and automatically blocks transactions above a
+      threshold; the cardholder is notified and can call to dispute. It runs in production for
+      all of our retail banking customers. It uses transaction history and device data, no
+      biometrics. There is no generative model involved. Access to the scoring service is
+      restricted to the payments platform with mutual TLS.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      ai_system.fine_tuned_or_trained: true
+      project.target_users: external
+      project.lifecycle_stage: production
+      ai_system.autonomy_level: decides
+      use_case.domains: [credit_insurance]
+      use_case.affects_legal_or_significant_effects: true
+      data.processes_personal_data: true
+      data.data_subjects: [customers]
+      data.trains_on_personal_data: true
+      data.biometric_identification: false
+      use_case.generates_synthetic_content: false
+      use_case.social_scoring: false
+      use_case.emotion_recognition: false
+      controls.in_place: [access_controls]
+    absent: [data.retention_policy]
+    inherent: high
+    residual: high
+    note: Automatic blocking of payments for all customers; access controls alone do not move it.
+
+  - id: ml-demand-forecast
+    tags: [ml, internal, no-pii]
+    description: >
+      A time-series forecasting model (Prophet) that predicts weekly demand per store from
+      aggregated sales totals and weather data. Supply planners use the forecast as one input
+      when ordering stock. It runs on aggregated figures only; no customer or employee data is
+      involved. In production since 2024, internal use only.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      project.target_users: internal
+      project.lifecycle_stage: production
+      data.processes_personal_data: false
+      use_case.affects_legal_or_significant_effects: false
+      use_case.generates_synthetic_content: false
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+    absent: [controls.in_place, ai_system.model_source]
+    inherent: low
+    residual: low
+
+  - id: ml-credit-decisioning
+    tags: [ml, external, annex-iii, decides]
+    description: >
+      Our consumer lending arm uses a logistic-regression scorecard to approve or decline
+      personal loan applications online. Applications under 5,000 euros are decided
+      automatically; a credit officer reviews the rest and can overturn any decision.
+      Applicants are members of the public in Spain. The model uses income, employment and
+      bureau data. No large language model is used.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      project.target_users: public
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: true
+      use_case.domains: [credit_insurance]
+      use_case.affects_legal_or_significant_effects: true
+      data.processes_personal_data: true
+      data.data_subjects: [public]
+      data.biometric_identification: false
+      use_case.generates_synthetic_content: false
+      use_case.social_scoring: false
+      use_case.emotion_recognition: false
+    absent: [controls.in_place, project.lifecycle_stage]
+    inherent: high
+    residual: high
+    note: Public auto-decisions on loans; officer review alone keeps the residual high.
+
+  # --- No AI at all -------------------------------------------------------------------------
+  - id: noai-rules-engine
+    tags: [noai, trap]
+    description: >
+      A deterministic rules engine that calculates employee travel-expense limits from the
+      HR policy tables. We considered using an LLM to parse receipts but decided against it;
+      the system is plain business rules written in Java. Finance staff use it internally.
+      It processes employee names and expense claims.
+    expected:
+      ai_system.uses_ai: false
+      project.target_users: internal
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+    absent: [controls.in_place, ai_system.autonomy_level]
+    inherent: low
+    residual: low
+    note: Mentions an LLM only to say it is not used.
+
+  - id: noai-dashboard-ai-in-name
+    tags: [noai, trap]
+    description: >
+      "AI Insights" is the name of our new sales dashboard. It is a set of SQL views and
+      Power BI charts showing pipeline totals by region. Despite the name there is no model of
+      any kind in it. Sales managers use it internally; it shows aggregated figures only.
+    expected:
+      ai_system.uses_ai: false
+      project.target_users: internal
+      data.processes_personal_data: false
+    absent: [controls.in_place, ai_system.gpai_model_used]
+    inherent: low
+    residual: low
+
+  - id: noai-replaced-model
+    tags: [noai, trap]
+    description: >
+      Last year the document router used a text classifier; it has been replaced by keyword
+      rules because the classifier was unreliable. Today the router moves incoming supplier
+      invoices into folders based on fixed patterns. No machine learning remains in the
+      system. Accounts payable staff use it.
+    expected:
+      ai_system.uses_ai: false
+      project.target_users: internal
+    absent: [controls.in_place, data.processes_personal_data]
+    inherent: low
+    residual: low
+
+  # --- Personal data: present, absent, anonymised, special categories, minors ---------------
+  - id: pii-anonymised-logs
+    tags: [genai, internal, no-pii]
+    description: >
+      An internal log-search assistant for platform engineers. Engineers ask questions in
+      natural language and the tool translates them into queries over the observability stack
+      and summarises the matching log lines with a self-hosted open-weights LLM. Logs are
+      anonymised before indexing and the tool handles no personal data. In production for the
+      infrastructure team only.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: open_weights
+      project.target_users: internal
+      project.lifecycle_stage: production
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      data.processes_personal_data: false
+      use_case.affects_legal_or_significant_effects: false
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+    absent: [controls.in_place]
+    inherent: low
+    residual: low
+
+  - id: pii-employee-sentiment
+    tags: [genai, internal, emotion]
+    description: >
+      An HR analytics tool that reads free-text answers from the quarterly employee survey and
+      uses an LLM to infer each employee's mood and likelihood of leaving, producing a named
+      list of at-risk staff for line managers. Managers decide what to do with it. Internal
+      use, pilot in one business unit.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      project.target_users: internal
+      project.lifecycle_stage: pilot
+      use_case.domains: [hr_employment]
+      use_case.emotion_recognition: true
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      use_case.affects_legal_or_significant_effects: true
+      data.biometric_identification: false
+      use_case.social_scoring: false
+    absent: [controls.in_place]
+    inherent: critical
+    residual: critical
+
+  - id: pii-special-category-health
+    tags: [ml, health, special-category]
+    description: >
+      A model that flags radiology reports for a second read by a senior radiologist when the
+      text suggests a possible missed finding. It processes patient health records from our
+      hospital. Radiologists always make the diagnosis; the tool only queues reports. Internal
+      use, in production.
+    expected:
+      ai_system.uses_ai: true
+      project.target_users: internal
+      project.lifecycle_stage: production
+      use_case.domains: [medical_or_safety_component]
+      data.processes_personal_data: true
+      data.special_category_data: [health]
+      data.data_subjects: [customers]
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+    absent: [controls.in_place, ai_system.gpai_model_used]
+    inherent: high
+    residual: medium
+
+  - id: pii-minors-tutor
+    tags: [genai, external, minors, education]
+    description: >
+      A homework-help chatbot for secondary-school pupils aged 12 to 16, offered through our
+      learning platform to schools in Ireland. It explains maths problems step by step using
+      Gemini via API. It does not grade or assess pupils and teachers see no scores. Pupils
+      chat with it directly. Conversations are kept for 30 days. Content filters and a
+      profanity block are in place and pupils are told the tutor is an AI.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: external
+      use_case.domains: [education]
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      data.processes_personal_data: true
+      data.data_subjects: [minors]
+      use_case.affects_legal_or_significant_effects: false
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+      controls.in_place: [guardrails, user_disclosure]
+    absent: [ai_system.human_oversight]
+    inherent: high
+    residual: high
+    note: Minors plus an Annex III domain; guardrails and disclosure are not enough to leave high.
+
+  # --- Biometrics and lookalikes --------------------------------------------------------------
+  - id: bio-face-access-control
+    tags: [ml, biometric, internal]
+    description: >
+      Facial recognition at the turnstiles of our office buildings: a camera matches each
+      employee's face against the enrolled badge photo before the gate opens. Security staff
+      can override at the desk. Internal employees only, in production at two sites.
+    expected:
+      ai_system.uses_ai: true
+      project.target_users: internal
+      project.lifecycle_stage: production
+      data.processes_personal_data: true
+      data.biometric_identification: true
+      data.special_category_data: [biometric]
+      data.data_subjects: [employees]
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: true
+      use_case.remote_biometric_id_public_spaces: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+    absent: [controls.in_place]
+    inherent: high
+    residual: high
+    note: Biometric identification at the gate decides access; a desk override alone keeps it high.
+
+  - id: bio-device-fingerprint-trap
+    tags: [ml, trap, no-biometric]
+    description: >
+      A bot-detection service for our login page. It computes a device fingerprint from
+      browser and network attributes (user agent, screen size, timing) and a small model
+      scores the likelihood that a session is automated; suspicious sessions get a CAPTCHA.
+      It never uses faces, voices or any body measurements. Public visitors, in production.
+    expected:
+      ai_system.uses_ai: true
+      project.target_users: public
+      project.lifecycle_stage: production
+      data.processes_personal_data: true
+      data.data_subjects: [public]
+      data.biometric_identification: false
+      data.special_category_data: []
+      use_case.affects_legal_or_significant_effects: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+      use_case.generates_synthetic_content: false
+    absent: [controls.in_place]
+    inherent: medium
+    residual: medium
+    note: Fingerprint here means a device fingerprint, not a biometric.
+
+  - id: bio-face-of-brand-trap
+    tags: [genai, trap, no-biometric]
+    description: >
+      A tool that drafts social-media posts for our brand ambassadors, who are the public face
+      of the company. The marketing team pastes a campaign brief and GPT-4o writes three post
+      variants; a human picks and edits one. No customer or ambassador personal data is used,
+      only the brief. Internal pilot.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      project.target_users: internal
+      project.lifecycle_stage: pilot
+      use_case.generates_synthetic_content: true
+      ai_system.human_oversight: true
+      ai_system.autonomy_level: assistive
+      data.processes_personal_data: false
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+      use_case.untargeted_facial_scraping: false
+    absent: [controls.in_place]
+    inherent: low
+    residual: low
+
+  - id: bio-voice-assistant-no-id
+    tags: [genai, external, trap]
+    description: >
+      A voice assistant in our banking app that lets customers ask about their balance by
+      speaking. Speech is transcribed with a third-party speech-to-text API and the answer is
+      composed by an LLM. The voice is not used to identify or verify the customer; they log
+      in with their PIN first. Customers in Italy, in production. The assistant says it is
+      automated at the start of each session and the audio is deleted after transcription.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: external
+      project.lifecycle_stage: production
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      data.processes_personal_data: true
+      data.data_subjects: [customers]
+      data.biometric_identification: false
+      use_case.affects_legal_or_significant_effects: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+      controls.in_place: [user_disclosure, access_controls]
+    absent: [ai_system.human_oversight]
+    inherent: high
+    residual: medium
+    note: External, conversational, generative, third party, personal data; two controls bring it to medium.
+
+  # --- Controls that are planned, not in place ------------------------------------------------
+  - id: plan-guardrails-roadmap
+    tags: [genai, external, planned-controls]
+    description: >
+      A public FAQ chatbot for our city council's website, answering questions about bin
+      collection and permits with an LLM via Azure OpenAI. Residents use it anonymously. We
+      plan to add prompt-injection filters and a disclosure banner next quarter, and the
+      security team has recommended rate limiting, which is on the roadmap. Nobody reviews the
+      answers today.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: public
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      ai_system.human_oversight: false
+      use_case.affects_legal_or_significant_effects: false
+      data.biometric_identification: false
+      use_case.social_scoring: false
+      controls.in_place: [none]
+    absent: [data.processes_personal_data, project.lifecycle_stage]
+    inherent: high
+    residual: high
+    note: Every control mentioned is a plan or a recommendation.
+
+  - id: plan-mixed-controls
+    tags: [genai, external, planned-controls]
+    description: >
+      Insurance claims assistant for policyholders: customers upload photos and describe the
+      damage, and an LLM drafts a claim summary for the adjuster, who makes the decision. SSO
+      and role-based access are in place for adjusters, and the model vendor's contract
+      prohibits training on our data. We intend to add output filtering and a red-team
+      exercise before we go from pilot to production.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: external
+      project.lifecycle_stage: pilot
+      use_case.domains: [credit_insurance]
+      use_case.generates_synthetic_content: true
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      data.processes_personal_data: true
+      data.data_subjects: [customers]
+      use_case.affects_legal_or_significant_effects: true
+      data.biometric_identification: false
+      use_case.social_scoring: false
+      controls.in_place: [access_controls, vendor_data_protections]
+    absent: [data.retention_policy]
+    inherent: high
+    residual: high
+    note: Output filtering and red-teaming are intentions; access controls and vendor terms are in place.
+
+  - id: plan-oversight-aspiration
+    tags: [ml, internal, planned-controls]
+    description: >
+      A resume-ranking model that orders applicants for recruiters by predicted fit, trained
+      on past hiring outcomes. Today the ranking is applied automatically to decide who gets
+      a first-round interview; we are considering adding a recruiter review step. Internal
+      recruiters, in production for graduate hiring.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.fine_tuned_or_trained: true
+      project.target_users: internal
+      project.lifecycle_stage: production
+      use_case.domains: [hr_employment]
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: false
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      data.trains_on_personal_data: true
+      use_case.affects_legal_or_significant_effects: true
+      data.biometric_identification: false
+      use_case.social_scoring: false
+      controls.in_place: [none]
+    absent: [ai_system.gpai_model_used]
+    inherent: high
+    residual: high
+    note: A review step under consideration is not human oversight.
+
+  # --- Prohibited practices -------------------------------------------------------------------
+  - id: prohibited-social-scoring
+    tags: [ml, prohibited]
+    description: >
+      A tenant trustworthiness score for our property-management clients that combines
+      social-media activity, utility payment history and neighbour complaints into one score
+      used to decide which applicants may rent and at what deposit. Applicants are members of
+      the public; the score is applied automatically.
+    expected:
+      ai_system.uses_ai: true
+      project.target_users: external
+      use_case.social_scoring: true
+      ai_system.autonomy_level: decides
+      data.processes_personal_data: true
+      data.data_subjects: [public]
+      use_case.affects_legal_or_significant_effects: true
+      data.biometric_identification: false
+    absent: [controls.in_place, ai_system.gpai_model_used]
+    inherent: critical
+    residual: critical
+
+  - id: prohibited-fit-score-is-not-social-scoring
+    tags: [genai, trap, hr]
+    description: >
+      A tool that gives recruiters a role-fit score from 1 to 5 for each applicant, generated
+      by an LLM from the CV and the job description, for that single vacancy. Recruiters make
+      every decision. Internal use only, pilot.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      project.target_users: internal
+      project.lifecycle_stage: pilot
+      use_case.domains: [hr_employment]
+      use_case.social_scoring: false
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      use_case.affects_legal_or_significant_effects: true
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+    absent: [controls.in_place]
+    inherent: high
+    residual: medium
+    note: A single-purpose fit score is not social scoring (Art. 5(1)(c)).
+
+  - id: prohibited-emotion-at-work
+    tags: [ml, prohibited, emotion]
+    description: >
+      Webcam-based attention and emotion detection for call-centre agents: the model reads
+      facial expressions during calls and alerts supervisors when an agent seems frustrated or
+      disengaged. Internal employees, pilot at one site.
+    expected:
+      ai_system.uses_ai: true
+      project.target_users: internal
+      project.lifecycle_stage: pilot
+      use_case.domains: [hr_employment]
+      use_case.emotion_recognition: true
+      data.processes_personal_data: true
+      data.special_category_data: [biometric]
+      data.data_subjects: [employees]
+      ai_system.autonomy_level: recommends
+      use_case.social_scoring: false
+    absent: [controls.in_place]
+    inherent: critical
+    residual: critical

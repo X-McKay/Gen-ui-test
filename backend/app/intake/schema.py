@@ -114,6 +114,20 @@ class Domain(StrEnum):
     OTHER = "other"
 
 
+class ControlKind(StrEnum):
+    """Controls the owner can declare. ``NONE`` is an explicit "none of these yet"."""
+
+    GUARDRAILS = "guardrails"
+    ACCESS_CONTROLS = "access_controls"
+    PII_MINIMISATION = "pii_minimisation"
+    ABUSE_MONITORING = "abuse_monitoring"
+    PRE_RELEASE_EVALUATION = "pre_release_evaluation"
+    VENDOR_DATA_PROTECTIONS = "vendor_data_protections"
+    INCIDENT_RESPONSE = "incident_response"
+    USER_DISCLOSURE = "user_disclosure"
+    NONE = "none"
+
+
 class EuAiActClassification(StrEnum):
     PROHIBITED = "prohibited"
     HIGH_RISK = "high_risk"
@@ -158,6 +172,7 @@ class Project(BaseModel):
     lifecycle_stage: FieldMeta[LifecycleStage] = Field(default_factory=FieldMeta[LifecycleStage])
     target_users: FieldMeta[TargetUsers] = Field(default_factory=FieldMeta[TargetUsers])
     deployment_regions: FieldMeta[list[str]] = Field(default_factory=FieldMeta[list[str]])
+    third_party_services: FieldMeta[str] = Field(default_factory=FieldMeta[str])
 
 
 class AiSystem(BaseModel):
@@ -207,6 +222,13 @@ class UseCase(BaseModel):
     untargeted_facial_scraping: FieldMeta[bool] = Field(default_factory=FieldMeta[bool])
 
 
+class Controls(BaseModel):
+    """Mitigations already in place. Only confirmed controls lower the residual risk."""
+
+    model_config = ConfigDict(extra="forbid")
+    in_place: FieldMeta[list[ControlKind]] = Field(default_factory=FieldMeta[list[ControlKind]])
+
+
 # --- Assessment (derived, never asked, never edited) ----------------------------------------
 
 
@@ -239,11 +261,75 @@ class EuAiActAssessment(BaseModel):
     rationale: list[RationaleEntry] = Field(default_factory=list)
 
 
+ControlStatus = Literal["applied", "unconfirmed", "absent", "unknown"]
+
+
+class RiskDriver(BaseModel):
+    """One answer that adds inherent risk, with the points it contributes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field: str
+    value: object
+    category: str = Field(description="exposure, autonomy, data or impact")
+    points: int = Field(ge=0)
+    text: str
+    lenses: list[str] = Field(
+        default_factory=list,
+        description="Enterprise risk lenses this driver counts towards",
+    )
+
+
+class ControlEffect(BaseModel):
+    """What one control did to the residual score, and why it did or did not count."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    field: str
+    control: str = Field(description="A ControlKind value, or the field name for an answer")
+    status: ControlStatus
+    points: int = Field(ge=0, description="Points removed from the inherent score")
+    text: str
+
+
+class RiskProfile(BaseModel):
+    """Inherent risk (from the answers) or residual risk (after confirmed controls), for the
+    whole use case or for one enterprise risk lens."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    lens: str | None = Field(default=None, description="None for the overall profile")
+    tier: RiskTier = RiskTier.LOW
+    score: int = 0
+    drivers: list[RiskDriver] = Field(default_factory=list)
+    controls: list[ControlEffect] = Field(default_factory=list)
+    floor: RiskTier | None = None
+    floor_reason: str | None = None
+
+
+class RiskLens(BaseModel):
+    """One enterprise lens (data privacy, information security, operational, financial,
+    reputational, regulatory) with its inherent and residual profile."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    lens: str
+    label: str
+    inherent: RiskProfile = Field(default_factory=RiskProfile)
+    residual: RiskProfile = Field(default_factory=RiskProfile)
+
+
 class Assessment(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     eu_ai_act: EuAiActAssessment = Field(default_factory=EuAiActAssessment)
     overall_risk_tier: RiskTier = RiskTier.LOW
+    inherent_risk: RiskProfile = Field(default_factory=RiskProfile)
+    residual_risk: RiskProfile = Field(default_factory=RiskProfile)
+    risk_lenses: list[RiskLens] = Field(
+        default_factory=list,
+        description="Inherent and residual risk per enterprise lens, in a fixed order",
+    )
     applicable_frameworks: list[str] = Field(default_factory=list)
     obligations: list[Obligation] = Field(default_factory=list)
     recommended_next_steps: list[str] = Field(default_factory=list)
@@ -254,7 +340,7 @@ class Assessment(BaseModel):
 
 # --- Record ---------------------------------------------------------------------------------
 
-SECTION_NAMES: tuple[str, ...] = ("project", "ai_system", "data", "use_case")
+SECTION_NAMES: tuple[str, ...] = ("project", "ai_system", "data", "use_case", "controls")
 
 
 class IntakeRecord(BaseModel):
@@ -265,6 +351,7 @@ class IntakeRecord(BaseModel):
     ai_system: AiSystem = Field(default_factory=AiSystem)
     data: Data = Field(default_factory=Data)
     use_case: UseCase = Field(default_factory=UseCase)
+    controls: Controls = Field(default_factory=Controls)
     assessment: Assessment = Field(default_factory=Assessment)
 
     @field_validator("meta")

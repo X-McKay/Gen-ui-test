@@ -25,7 +25,7 @@ const STATE_COPY: Record<RailState, string> = {
 };
 
 /**
- * Four sections as a horizontal rail. No counts are shown; the fraction lives in the
+ * The record sections as a horizontal rail. No counts are shown; the fraction lives in the
  * aria-label so screen readers get the detail without the layout carrying numbers.
  */
 export function ProgressRail({ sections, className }: ProgressRailProps) {

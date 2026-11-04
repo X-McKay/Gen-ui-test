@@ -2,7 +2,9 @@
 
 The template receives a flat, display-ready context built here so it contains no
 business logic. Only values are shown in the form body; confidence, source and
-confirmation stay in the JSON export.
+confirmation stay in the JSON export. The one place confirmation surfaces is the
+residual-risk controls table, where "Confirmed" versus "Claimed, not confirmed" is the
+assessment outcome the governance team needs, computed by the rules engine.
 """
 
 from __future__ import annotations
@@ -23,11 +25,15 @@ from app.intake.question_bank import (
     display_value,
 )
 from app.intake.schema import (
+    ControlEffect,
     EuAiActClassification,
     IntakeMode,
     IntakeRecord,
     Obligation,
     RationaleEntry,
+    RiskDriver,
+    RiskLens,
+    RiskProfile,
     RiskTier,
 )
 
@@ -95,6 +101,13 @@ MODE_LABELS: dict[IntakeMode, str] = {
     IntakeMode.EXISTING: "Existing project",
 }
 
+CONTROL_STATUS_LABELS: dict[str, str] = {
+    "applied": "Confirmed",
+    "unconfirmed": "Claimed, not confirmed",
+    "absent": "Not in place",
+    "unknown": "Not answered",
+}
+
 
 class FormRow(TypedDict):
     field: str
@@ -117,6 +130,44 @@ class OpenQuestion(TypedDict):
 class ObligationGroup(TypedDict):
     framework: str
     obligations: list[Obligation]
+
+
+class DriverRow(TypedDict):
+    field: str
+    label: str
+    value: str
+    category: str
+    points: int
+    text: str
+
+
+class ControlRow(TypedDict):
+    field: str
+    control: str
+    label: str
+    status: str
+    status_label: str
+    points: int
+    text: str
+
+
+class RiskProfileView(TypedDict):
+    key: str
+    label: str
+    tier: str
+    tier_label: str
+    css_class: str
+    score: int
+    floor: str | None
+    floor_reason: str | None
+
+
+class RiskLensRow(TypedDict):
+    lens: str
+    label: str
+    inherent: RiskProfileView
+    residual: RiskProfileView
+    drivers: str
 
 
 def format_datetime(value: datetime | None) -> str:
@@ -184,6 +235,77 @@ def rationale_value(entry: RationaleEntry) -> str:
     return display_value(entry.field, entry.value)
 
 
+def control_label(effect: ControlEffect) -> str:
+    """Option label for a ``ControlKind``; the field label when the control is an answer
+    (``ai_system.human_oversight`` → ``Human oversight``)."""
+    if effect.control == effect.field:
+        return field_label(effect.field)
+    spec = QUESTIONS_BY_FIELD.get(effect.field)
+    if spec is not None:
+        for option in spec.options:
+            if option.value == effect.control:
+                return option.label
+    return humanise_field(effect.control)
+
+
+def driver_rows(drivers: list[RiskDriver]) -> list[DriverRow]:
+    return [
+        {
+            "field": driver.field,
+            "label": field_label(driver.field),
+            "value": display_value(driver.field, driver.value),
+            "category": driver.category.capitalize(),
+            "points": driver.points,
+            "text": driver.text,
+        }
+        for driver in drivers
+    ]
+
+
+def control_rows(controls: list[ControlEffect]) -> list[ControlRow]:
+    return [
+        {
+            "field": effect.field,
+            "control": effect.control,
+            "label": control_label(effect),
+            "status": effect.status,
+            "status_label": CONTROL_STATUS_LABELS[effect.status],
+            "points": effect.points,
+            "text": effect.text,
+        }
+        for effect in controls
+    ]
+
+
+def risk_profile_view(key: str, label: str, profile: RiskProfile) -> RiskProfileView:
+    tier = RiskTier(profile.tier)
+    return {
+        "key": key,
+        "label": label,
+        "tier": tier.value,
+        "tier_label": tier.value.capitalize(),
+        "css_class": RISK_TIER_CSS_CLASS[tier],
+        "score": profile.score,
+        "floor": RiskTier(profile.floor).value if profile.floor is not None else None,
+        "floor_reason": profile.floor_reason,
+    }
+
+
+def risk_lens_rows(lenses: list[RiskLens]) -> list[RiskLensRow]:
+    """One row per enterprise lens, in the engine's fixed order; the driver column is the
+    texts of the drivers tagged with that lens, or an em dash when none applies."""
+    return [
+        {
+            "lens": lens.lens,
+            "label": lens.label,
+            "inherent": risk_profile_view(f"{lens.lens}-inherent", "Inherent", lens.inherent),
+            "residual": risk_profile_view(f"{lens.lens}-residual", "Residual", lens.residual),
+            "drivers": "; ".join(driver.text for driver in lens.inherent.drivers) or "—",
+        }
+        for lens in lenses
+    ]
+
+
 def build_form_context(record: IntakeRecord) -> dict[str, object]:
     assessment = record.assessment
     classification = EuAiActClassification(assessment.eu_ai_act.classification)
@@ -206,6 +328,13 @@ def build_form_context(record: IntakeRecord) -> dict[str, object]:
         "risk_tier_label": risk_tier.value.capitalize(),
         "risk_tier_css_class": RISK_TIER_CSS_CLASS[risk_tier],
         "frameworks": assessment.applicable_frameworks,
+        "inherent_risk": risk_profile_view("inherent", "Inherent risk", assessment.inherent_risk),
+        "residual_risk": risk_profile_view("residual", "Residual risk", assessment.residual_risk),
+        "risk_lenses": risk_lens_rows(assessment.risk_lenses),
+        # The residual profile carries the same drivers as the inherent one; the drivers
+        # table is shown once, the controls table comes from the residual profile.
+        "risk_drivers": driver_rows(assessment.inherent_risk.drivers),
+        "risk_controls": control_rows(assessment.residual_risk.controls),
         "sections": form_sections(record),
         "rationale": [
             {

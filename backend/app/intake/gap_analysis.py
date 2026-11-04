@@ -11,6 +11,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.intake.question_bank import (
+    CONDITIONAL_GATES,
     CONDITIONAL_MUST_CONFIRM,
     QUESTION_BANK,
     SECTION_LABELS,
@@ -71,6 +72,9 @@ def must_confirm(record: IntakeRecord, spec: QuestionSpec) -> bool:
 
 def gate_open(record: IntakeRecord, spec: QuestionSpec) -> bool:
     """A closed or unanswered gate skips the dependent question."""
+    conditional = CONDITIONAL_GATES.get(spec.field)
+    if conditional is not None and not conditional(record):
+        return False
     if spec.gate is None:
         return True
     gate_field = record.get_field(spec.gate.field)
@@ -180,7 +184,10 @@ def section_progress(record: IntakeRecord, active: Section | None = None) -> lis
                 # Skipped behind an answered gate counts as done; behind an unanswered gate
                 # it is still pending.
                 gate_answered = spec.gate is not None and record.get_field(spec.gate.field).is_set
-                done += 1 if gate_answered else 0
+                conditional_closed = spec.field in CONDITIONAL_GATES and not CONDITIONAL_GATES[
+                    spec.field
+                ](record)
+                done += 1 if gate_answered or conditional_closed else 0
             elif status in {FieldStatus.CONFIRMED, FieldStatus.INFERRED_OK, FieldStatus.UNKNOWN}:
                 done += 1
         rows.append(

@@ -24,7 +24,7 @@ const option = z.object({
   description: z.string().max(160).optional(),
 });
 
-const fieldPath = z.string().regex(/^(project|ai_system|data|use_case)\.[a-z_]+$/, "a dotted field path");
+const fieldPath = z.string().regex(/^(project|ai_system|data|use_case|controls)\.[a-z_]+$/, "a dotted field path");
 const questionPrompt = z.string().min(4).max(160);
 
 export const intakeUI = createGenerativeUI({
@@ -36,7 +36,7 @@ export const intakeUI = createGenerativeUI({
         "One interview step: a short intro (two sentences at most), optional assumptions or findings to confirm, and up to three questions. It owns the single confirm button; use it as the root of every step.",
       props: z.object({
         intro: z.string().min(1).max(320),
-        section: z.enum(["project", "ai_system", "data", "use_case", "summary"]),
+        section: z.enum(["project", "ai_system", "data", "use_case", "controls", "summary"]),
         confirmLabel: z.string().max(40).optional(),
       }),
       slots: { assumptions: "single", questions: "multiple", findings: "single" },

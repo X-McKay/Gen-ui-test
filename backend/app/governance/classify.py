@@ -6,7 +6,7 @@ Pure functions, no I/O. ``classify`` is recomputed on every change to the record
 
 from __future__ import annotations
 
-from app.governance import eu_ai_act
+from app.governance import eu_ai_act, risk_profile
 from app.governance.frameworks import FRAMEWORK_MODULES
 from app.governance.merge import identity, obligation_key, unique
 from app.intake.gap_analysis import open_questions
@@ -50,7 +50,7 @@ def _escalation_first(steps: list[str]) -> list[str]:
 
 
 def classify(record: IntakeRecord) -> Assessment:
-    """Run the EU AI Act table, then every framework module, and merge the results."""
+    """Run the EU AI Act table, every framework module and the inherent/residual tables."""
     eu = eu_ai_act.evaluate_detailed(record)
     frameworks: list[str] = [eu_ai_act.FRAMEWORK_NAME]
     obligations: list[Obligation] = list(eu.obligations)
@@ -67,9 +67,15 @@ def classify(record: IntakeRecord) -> Assessment:
         next_steps.extend(result.next_steps)
         tier = raise_tier(tier, result.tier_floor)
 
+    inherent = risk_profile.inherent(record, eu.assessment.classification)
+    residual = risk_profile.residual(record, eu.assessment.classification, inherent)
+    lenses = risk_profile.lens_profiles(record, eu.assessment.classification, inherent)
     return Assessment(
         eu_ai_act=eu.assessment,
         overall_risk_tier=tier,
+        inherent_risk=inherent,
+        residual_risk=residual,
+        risk_lenses=lenses,
         applicable_frameworks=unique(frameworks, key=identity),
         obligations=unique(obligations, key=obligation_key),
         recommended_next_steps=_escalation_first(unique(next_steps, key=identity)),

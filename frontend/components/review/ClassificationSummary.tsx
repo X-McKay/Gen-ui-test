@@ -7,11 +7,16 @@ import { TierBadge } from "@/components/intake/TierBadge";
 import { Badge } from "@/components/ui/badge";
 import { getFieldMeta } from "@/components/review/recordFields";
 import { formatValue } from "@/lib/formatters";
-import type { IntakeRecord, Obligation } from "@/lib/intakeTypes";
+import type { ControlEffect, IntakeRecord, Obligation, RiskDriver, RiskLens, RiskProfile } from "@/lib/intakeTypes";
 import {
   annexLabel,
+  CONTROL_STATUS_LABELS,
+  CONTROL_STATUS_ORDER,
+  type ControlStatus,
   fieldLabel,
   frameworkLabel,
+  optionLabel,
+  RISK_PROFILE_EXPLANATIONS,
   RISK_TIER_LABELS,
   TIER_EXPLANATIONS,
   type TierKey,
@@ -67,12 +72,13 @@ function FieldLink({
     <button
       type="button"
       onClick={() => onGoToField(path)}
-      aria-label={`Go to ${fieldLabel(path)}`}
       className={cn(
         "group/link -mx-2 flex w-[calc(100%+1rem)] min-h-11 items-start gap-2 rounded-md px-2 py-2 text-left outline-none transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         className,
       )}
     >
+      {/* Named from content so the visible text is part of the accessible name (WCAG 2.5.3). */}
+      <span className="sr-only">Go to {fieldLabel(path)}: </span>
       <span className="min-w-0 flex-1">{children}</span>
       <ArrowUpRight
         className="mt-1 size-4 shrink-0 text-muted-foreground/60 transition-colors group-hover/link:text-accent group-focus-visible/link:text-accent"
@@ -82,7 +88,196 @@ function FieldLink({
   );
 }
 
-/** The right-hand panel: tier, why, obligations, next steps and open questions. */
+function groupControls(controls: readonly ControlEffect[]): [ControlStatus, ControlEffect[]][] {
+  return CONTROL_STATUS_ORDER.map((status) => [status, controls.filter((c) => c.status === status)] as const)
+    .filter(([, items]) => items.length > 0)
+    .map(([status, items]) => [status, items]);
+}
+
+/** A declared control is an option of `controls.in_place`; anything else is an answer's field path. */
+function controlLabel(effect: ControlEffect): string {
+  const asOption = optionLabel("controls.in_place", effect.control);
+  return asOption === effect.control ? fieldLabel(effect.control) : asOption;
+}
+
+function sentenceCase(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function Points({ value, sign }: { value: number; sign: "+" | "−" }) {
+  return (
+    <span className="tabular shrink-0 text-sm text-muted-foreground">
+      {sign}
+      {Math.abs(value)}
+      <span className="sr-only"> points</span>
+    </span>
+  );
+}
+
+function RiskTierCard({ kind, profile }: { kind: "inherent" | "residual"; profile: RiskProfile }) {
+  return (
+    <div
+      data-testid={`risk-${kind}`}
+      data-tier={profile.tier}
+      className="flex min-w-0 flex-col gap-1 rounded-md border border-hairline bg-background/40 px-3 py-2.5"
+    >
+      <span className="text-sm text-muted-foreground">{kind === "inherent" ? "Inherent" : "Residual"}</span>
+      <span className="flex flex-wrap items-baseline gap-x-2">
+        <span className={cn("text-lg font-medium", RISK_CLASS[profile.tier])}>{RISK_TIER_LABELS[profile.tier]}</span>
+        <span className="tabular text-sm text-muted-foreground">Score {profile.score}</span>
+      </span>
+      <p className="text-sm text-muted-foreground text-pretty">{RISK_PROFILE_EXPLANATIONS[kind]}</p>
+      {profile.floor_reason && (
+        <p className="mt-1 text-sm text-foreground/90 text-pretty" data-testid="risk-floor">
+          {profile.floor ? `Cannot go below ${RISK_TIER_LABELS[profile.floor].toLowerCase()}: ` : ""}
+          {profile.floor_reason}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function LensTier({ kind, profile }: { kind: "inherent" | "residual"; profile: RiskProfile }) {
+  return (
+    <span className="flex items-baseline gap-1.5 text-sm">
+      {/* Visible below sm where there is no column header; the header carries the name on wider screens. */}
+      <span className="text-muted-foreground sm:sr-only">{kind === "inherent" ? "Inherent" : "Residual"}</span>
+      <span className={cn("font-medium", RISK_CLASS[profile.tier])}>{RISK_TIER_LABELS[profile.tier]}</span>
+      <span className="tabular text-muted-foreground">
+        {profile.score}
+        <span className="sr-only"> points</span>
+      </span>
+    </span>
+  );
+}
+
+const LENS_COLUMNS = "sm:grid-cols-[minmax(0,1fr)_7.5rem_7.5rem] sm:gap-x-3";
+
+/** One row per enterprise risk lens, in the order the backend fixed; stacks below sm. */
+function RiskLensList({ lenses }: { lenses: readonly RiskLens[] }) {
+  return (
+    <div className="flex flex-col gap-1 pt-1" data-testid="risk-lenses">
+      <h4 id="risk-lenses-title" className="text-sm font-medium">
+        By lens
+      </h4>
+      <div className={cn("hidden text-sm text-muted-foreground sm:grid", LENS_COLUMNS)} aria-hidden="true">
+        <span />
+        <span>Inherent</span>
+        <span>Residual</span>
+      </div>
+      <ul className="flex flex-col divide-y divide-hairline" aria-labelledby="risk-lenses-title">
+        {lenses.map((lens) => (
+          <li
+            key={lens.lens}
+            data-lens={lens.lens}
+            data-inherent={lens.inherent.tier}
+            data-residual={lens.residual.tier}
+            className={cn("flex min-w-0 flex-col gap-0.5 py-1.5 sm:grid sm:items-baseline", LENS_COLUMNS)}
+          >
+            <span className="text-sm text-foreground">{lens.label}</span>
+            <span className="flex flex-wrap gap-x-4 gap-y-0.5 sm:contents">
+              <LensTier kind="inherent" profile={lens.inherent} />
+              <LensTier kind="residual" profile={lens.residual} />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function RiskProfileSection({
+  inherent,
+  residual,
+  lenses,
+  onGoToField,
+}: {
+  inherent: RiskProfile;
+  residual: RiskProfile;
+  lenses: readonly RiskLens[];
+  onGoToField: (path: string) => void;
+}) {
+  const drivers: readonly RiskDriver[] = inherent.drivers.length > 0 ? inherent.drivers : residual.drivers;
+  const controls = groupControls(residual.controls.length > 0 ? residual.controls : inherent.controls);
+
+  return (
+    <section
+      data-testid="risk-profile"
+      data-inherent={inherent.tier}
+      data-residual={residual.tier}
+      aria-labelledby="risk-profile-title"
+      className="flex flex-col gap-3 border-t border-hairline pt-5"
+    >
+      <SectionTitle id="risk-profile-title">Inherent and residual risk</SectionTitle>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <RiskTierCard kind="inherent" profile={inherent} />
+        <RiskTierCard kind="residual" profile={residual} />
+      </div>
+
+      {lenses.length > 0 && <RiskLensList lenses={lenses} />}
+
+      {drivers.length > 0 && (
+        <div className="flex flex-col gap-1 pt-1">
+          <h4 id="risk-drivers-title" className="text-sm font-medium">
+            Drivers
+          </h4>
+          <ul className="flex flex-col" aria-labelledby="risk-drivers-title" data-testid="risk-drivers">
+            {drivers.map((driver, index) => (
+              <li key={`${driver.field}-${index}`}>
+                <FieldLink path={driver.field} onGoToField={onGoToField}>
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 text-sm text-foreground">{driver.text}</span>
+                    <Points value={driver.points} sign="+" />
+                  </span>
+                  <span className="mt-0.5 block text-sm text-muted-foreground">
+                    {fieldLabel(driver.field)}: {formatValue(driver.field, driver.value)}
+                    {driver.category && (
+                      <>
+                        <span aria-hidden="true"> · </span>
+                        {sentenceCase(driver.category)}
+                      </>
+                    )}
+                  </span>
+                </FieldLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {controls.length > 0 && (
+        <div className="flex flex-col gap-2 pt-1">
+          <h4 id="risk-controls-title" className="text-sm font-medium">
+            Controls
+          </h4>
+          {controls.map(([status, items]) => (
+            <div key={status} className="flex flex-col gap-0.5" data-testid="risk-control-group" data-status={status}>
+              <p className="text-sm text-muted-foreground">
+                {CONTROL_STATUS_LABELS[status]}
+                <span className="tabular ml-2">{items.length}</span>
+              </p>
+              <ul className="flex flex-col">
+                {items.map((effect, index) => (
+                  <li key={`${effect.control}-${index}`}>
+                    <FieldLink path={effect.field} onGoToField={onGoToField}>
+                      <span className="flex items-baseline justify-between gap-3">
+                        <span className="min-w-0 text-sm text-foreground">{controlLabel(effect)}</span>
+                        {status === "applied" && <Points value={effect.points} sign="−" />}
+                      </span>
+                      <span className="mt-0.5 block text-sm text-muted-foreground">{effect.text}</span>
+                    </FieldLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** The right-hand panel: tier, risk profiles, why, obligations, next steps and open questions. */
 export function ClassificationSummary({ record, onGoToField, className }: ClassificationSummaryProps) {
   const assessment = record.assessment;
   const eu = assessment?.eu_ai_act;
@@ -90,6 +285,10 @@ export function ClassificationSummary({ record, onGoToField, className }: Classi
   const annex = eu?.annex_iii_categories ?? [];
   const rationale = eu?.rationale ?? [];
   const riskTier = assessment?.overall_risk_tier;
+  const inherent: RiskProfile | undefined = assessment?.inherent_risk;
+  const residual: RiskProfile | undefined = assessment?.residual_risk;
+  // Older records predate the lenses; the list renders nothing for them.
+  const lenses: readonly RiskLens[] = assessment?.risk_lenses ?? [];
   const frameworks = assessment?.applicable_frameworks ?? [];
   const obligations = groupObligations(assessment?.obligations ?? []);
   const nextSteps = assessment?.recommended_next_steps ?? [];
@@ -143,6 +342,10 @@ export function ClassificationSummary({ record, onGoToField, className }: Classi
           )}
         </dd>
       </dl>
+
+      {inherent && residual && (
+        <RiskProfileSection inherent={inherent} residual={residual} lenses={lenses} onGoToField={onGoToField} />
+      )}
 
       {rationale.length > 0 && (
         <section aria-labelledby="why-title" className="flex flex-col gap-2 border-t border-hairline pt-5">

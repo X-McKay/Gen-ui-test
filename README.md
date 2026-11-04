@@ -59,6 +59,75 @@ renders in a few seconds instead of waiting for the model to copy it. The same d
 `MOCK_MODEL=1`, where a scripted model drives the identical tool loop from a keyword
 extractor, so CI and the mock Playwright suite never touch the network.
 
+### Inherent and residual risk
+
+The EU AI Act classification says what the law requires. Two more tables in
+`app/governance/risk_profile.py` say how risky the use case is and how much of that risk the
+owner has already dealt with:
+
+- **Inherent risk** scores the use case as described, in four categories: exposure (who meets
+  the system: public, external, conversational, generative, third-party model), autonomy
+  (acts alone, nobody can override), data (personal, special-category, biometric, minors,
+  training, transfers) and impact (significant effects, Annex III area, emotion inference).
+  Bands: 0–3 low, 4–7 medium, 8–13 high, 14+ critical, with a floor from the legal
+  classification. An externally facing chatbot lands in **high**.
+- **Residual risk** removes points per control the owner has **confirmed** (`controls.in_place`:
+  guardrails, access controls, personal-data minimisation, abuse monitoring, evaluation and
+  red-teaming, vendor data protections, incident response, user disclosure; plus human
+  oversight), capped per category, and keeps a legal floor: a prohibited practice stays
+  critical and an Annex III system stays at least medium. The same chatbot with confirmed
+  guardrails, disclosure, monitoring and redaction is **low**.
+
+- **Six enterprise lenses** reuse the same drivers and controls, each tagged with the lenses
+  it counts towards: data and privacy, information security, operational, financial,
+  reputational and regulatory. Every lens gets its own inherent and residual tier, so a
+  public chatbot with no personal data reads high on information security and reputational
+  risk and low on data privacy, and the legal floor applies to the regulatory lens only.
+
+Both profiles list their drivers and every control with its status (confirmed, claimed but
+not confirmed, not in place, not answered) on the review page and in the PDF. A control the
+model inferred from the description never lowers the residual until a person confirms it, and
+the extraction prompt only records controls described as in place today, never plans. The
+controls question is a single multi-select, asked only when the inherent risk is medium or
+above, so a low-risk tool is not interviewed about guardrails.
+
+### Repository risk assessment (agentic, fact-based)
+
+`make risk-assess REPO=<path or https URL>` points the fact-finder agents at an arbitrary
+repository and produces the same assessment the intake produces for a description, grounded
+in the repository's files:
+
+1. Five **fact lanes** run in parallel, each an agent made of a prompt, one lane skill and two
+   tools (`backend/risk_review/agents/fact_finder/`): purpose and users, AI usage, data and
+   privacy, third-party services, controls in code. Each records facts with `record_facts`,
+   which validates the value against the intake record exactly as the product does and
+   checks every evidence quote against the cited line, so a fact the repository does not
+   show never reaches the report.
+2. Facts are merged (highest confidence wins, disagreements kept), written into an intake
+   record with `source="repo:<file>"` and nothing confirmed, and the deterministic rules
+   engine runs: EU AI Act classification and obligations, the framework modules, inherent
+   risk and residual risk. The report shows the residual risk as it stands (no control
+   confirmed) and what it would be if the claimed controls were confirmed, plus the required
+   questions the repository could not answer, which is where the intake interview starts.
+3. `reports/risk-assessment/assessment.md` lists every fact with its evidence line, the risk
+   drivers, the controls with their status, the rationale and the obligations, and the cost
+   of the run (requests, tokens, tool calls, time per lane).
+
+The model never rates risk; it only establishes facts, and only facts with evidence. The
+two fixture repositories double as eval cases (`make eval-intake EVAL_ARGS="--suite repos"`).
+
+Measured on the local model (`docs/risk-reviews/`):
+
+| Eval | Result |
+| --- | --- |
+| Descriptions, 27 cases x 2 runs | pass rate 0.74, field accuracy 0.88, control false positives 0, silent missed risks 0, inherent and residual tier exact 0.89; risk false positives in 19 % of runs, almost all an Annex III domain assigned on a borderline description; p50 21 s per extraction |
+| Repository, `hr_screening` fixture | 37 grounded facts, EU high-risk, inherent high, residual medium if the claimed controls are confirmed, 313 s, 52 requests, 418 k input tokens |
+
+Evidence grounding in code did most of the work: a risk-raising value whose evidence quote is
+not in the description is capped at low confidence (so the owner is asked) or dropped
+(domains and controls), and a claimed control must be named in the text. Before that, control
+false positives were 18 in 54 runs and the pass rate was 0.30.
+
 ### Surface lifecycle
 
 - One generative-UI target: `interview` (`INTERVIEW_TARGET_ID`), rendered by
@@ -173,6 +242,7 @@ extraction in `structured_extraction.py` (no JSON mode, so it works on vLLM).
 | Schema contract | `make check-schema` | `schema/intake.schema.json` must match the Pydantic model and `frontend/lib/intakeTypes.ts` must match the schema. `make export-schema` regenerates both. |
 | End to end, mock | `make e2e` | Playwright on chromium, firefox, webkit and Pixel 7; `playwright.config.ts` starts both servers with `MOCK_MODEL=1`. Specs in `frontend/e2e/`. |
 | End to end, live | `make e2e-live` | Same specs with `E2E_LIVE=1` against the real endpoint; counts relax to the plan's bounds. |
+| Intake assessment evals | `make eval-intake` | `backend/evals/intake_assessment/`: use-case descriptions with gold facts, hard negatives (AI only in the name, device fingerprints, planned controls, fit scores that are not social scoring) and the inherent/residual tiers the engine must derive. Runs the real extraction on the configured model; reports field accuracy, **risk false positives**, **control false positives**, missed risks, tier agreement, latency and tokens, and gates against `baselines/facts.json`. |
 | Interactive | `make e2e-ui` | Playwright UI mode. Set `E2E_EXTERNAL_SERVERS=1` to reuse already-running servers. |
 
 Locally the same checks run as pre-commit hooks after `make setup`. CI (`.github/workflows/ci.yml`) runs `backend`, `schema` and `frontend` on every pull request

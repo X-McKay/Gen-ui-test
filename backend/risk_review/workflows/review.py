@@ -215,23 +215,9 @@ async def run_review(
     )
 
 
-def compute_totals(lanes: list[LaneResult], started: datetime) -> Totals:
+def compute_totals_from_metrics(runs: list[RunMetrics], started: datetime) -> Totals:
+    """Sum the cost of a set of agent runs; the verdict counters stay at zero."""
     totals = Totals(duration_ms=int((datetime.now(UTC) - started).total_seconds() * 1000))
-    runs: list[RunMetrics] = []
-    for lane in lanes:
-        runs.append(lane.metrics)
-        for item in lane.findings:
-            totals.findings += 1
-            if item.verifier_metrics is not None:
-                runs.append(item.verifier_metrics)
-            if item.verdict is None:
-                totals.unverified += 1
-            elif item.verdict.verdict == "confirmed":
-                totals.confirmed += 1
-            elif item.verdict.verdict == "refuted":
-                totals.refuted += 1
-            else:
-                totals.uncertain += 1
     for run in runs:
         totals.model_requests += run.model_requests
         totals.input_tokens += run.input_tokens
@@ -240,6 +226,30 @@ def compute_totals(lanes: list[LaneResult], started: datetime) -> Totals:
         totals.tool_calls += run.tool_calls
         totals.estimated_cost_usd += run.estimated_cost_usd
         totals.budget_violations += len(run.budget_violations)
+    return totals
+
+
+def compute_totals(lanes: list[LaneResult], started: datetime) -> Totals:
+    runs: list[RunMetrics] = []
+    counters = Totals()
+    for lane in lanes:
+        runs.append(lane.metrics)
+        for item in lane.findings:
+            counters.findings += 1
+            if item.verifier_metrics is not None:
+                runs.append(item.verifier_metrics)
+            if item.verdict is None:
+                counters.unverified += 1
+            elif item.verdict.verdict == "confirmed":
+                counters.confirmed += 1
+            elif item.verdict.verdict == "refuted":
+                counters.refuted += 1
+            else:
+                counters.uncertain += 1
+    totals = compute_totals_from_metrics(runs, started)
+    totals.findings, totals.confirmed = counters.findings, counters.confirmed
+    totals.refuted, totals.uncertain = counters.refuted, counters.uncertain
+    totals.unverified = counters.unverified
     return totals
 
 
