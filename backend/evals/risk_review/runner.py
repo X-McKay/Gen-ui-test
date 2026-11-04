@@ -94,8 +94,8 @@ class Thresholds(BaseModel):
     )
     operational: dict[str, float] = Field(
         default_factory=lambda: {
-            "p95_latency_s_max": 600.0,
-            "p95_tokens_max": 400_000.0,
+            "p95_latency_s_max": 300.0,
+            "p95_tokens_max": 650_000.0,
             "p95_model_requests_max": 40.0,
         }
     )

@@ -86,6 +86,72 @@ async def test_review_workflow_collects_findings_and_metrics(
     assert "## Skill: logging-and-redaction" in str(first_request.config.system_instruction)
 
 
+async def test_agent_that_writes_prose_is_nudged_once(tiny_repo: Path, tmp_path: Path) -> None:
+    model = ScriptedLlm.with_script(
+        [
+            text("Here is my report as prose instead of a tool call."),
+            call("report_findings", {"status": "completed", "findings": [FINDING]}),
+            text("Done."),
+        ]
+    )
+    report = await run_review(
+        lanes=["export-rendering"],
+        repository_root=tiny_repo,
+        backend_dir=BACKEND_DIR,
+        settings=_settings(tmp_path),
+        trace_path=None,
+        model=model,
+        verify=False,
+    )
+    lane = report.lanes[0]
+    assert lane.status == "completed" and len(lane.findings) == 1
+    assert lane.metrics.nudged and lane.metrics.model_requests == 3
+    nudge_turn = model.requests[1]
+    assert any(
+        part.text and "delivery tool" in part.text
+        for content in nudge_turn.contents
+        for part in (content.parts or [])
+    )
+
+
+async def test_transient_failure_is_retried_once(tiny_repo: Path, tmp_path: Path) -> None:
+    model = _FailOnce(
+        ScriptedLlm.with_script(
+            [call("report_findings", {"status": "completed", "findings": [FINDING]}), text("ok")]
+        )
+    )
+    report = await run_review(
+        lanes=["export-rendering"],
+        repository_root=tiny_repo,
+        backend_dir=BACKEND_DIR,
+        settings=_settings(tmp_path),
+        trace_path=None,
+        model=model,
+        verify=False,
+    )
+    lane = report.lanes[0]
+    assert lane.status == "completed" and lane.metrics.attempt == 2
+    assert lane.metrics.outcome == "success"
+
+
+class _ConnectionTimeoutError(Exception):
+    pass
+
+
+class _FailOnce(ScriptedLlm):
+    def __init__(self, inner: ScriptedLlm) -> None:
+        super().__init__()
+        self._inner = inner
+        self._failed = False
+
+    async def generate_content_async(self, llm_request, stream=False):  # type: ignore[no-untyped-def]
+        if not self._failed:
+            self._failed = True
+            raise _ConnectionTimeoutError("simulated provider timeout")
+        async for response in self._inner.generate_content_async(llm_request, stream):
+            yield response
+
+
 async def test_agent_that_never_reports_is_needs_information(
     tiny_repo: Path, tmp_path: Path
 ) -> None:

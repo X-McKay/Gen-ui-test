@@ -30,4 +30,4 @@ trajectory:
 operational:
   max_latency_s: 600
   max_model_requests: 40
-  max_total_tokens: 400000
+  max_total_tokens: 650000

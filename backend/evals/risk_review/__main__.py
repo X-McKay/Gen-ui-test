@@ -25,7 +25,11 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--repeats", type=int, default=1)
     run.add_argument("--case", action="append", help="Only this case id (repeatable)")
     run.add_argument("--out", type=Path, default=None)
-    run.add_argument("--promote", action="store_true", help="Accept the result as the baseline")
+    run.add_argument(
+        "--promote",
+        action="store_true",
+        help="Accept the result as the baseline (refused when a gate failed)",
+    )
     promote = commands.add_parser("promote", help="Accept an earlier experiment as the baseline")
     promote.add_argument("experiment_id")
     args = parser.parse_args(argv)
@@ -33,6 +37,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "promote":
         path = EXPERIMENTS_DIR / args.experiment_id / "results.json"
         experiment = Experiment.model_validate_json(path.read_text(encoding="utf-8"))
+        if not experiment.release_ok:
+            print("not promoted: that experiment failed a release gate", file=sys.stderr)
+            return 1
         print(f"baseline written: {promote_baseline(experiment)}")
         return 0
 
@@ -48,8 +55,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     print((folder / "summary.md").read_text())
     print(f"results: {folder}", file=sys.stderr)
-    if args.promote:
+    if args.promote and experiment.release_ok:
         print(f"baseline written: {promote_baseline(experiment)}", file=sys.stderr)
+    elif args.promote:
+        print("not promoted: a release gate failed", file=sys.stderr)
     return 0 if experiment.release_ok else 1
 
 

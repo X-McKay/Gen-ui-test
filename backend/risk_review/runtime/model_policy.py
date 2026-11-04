@@ -18,6 +18,8 @@ from app.settings import Settings, get_settings
 from risk_review.runtime.spec import ModelSettings, SpecError
 from risk_review.settings import RiskReviewSettings, get_review_settings
 
+REVIEW_REQUEST_TIMEOUT_S = 180
+
 
 class ModelPolicy(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -98,6 +100,9 @@ def build_model(resolved: ResolvedModel, app_settings: Settings | None = None) -
     model_id = str(kwargs.pop("model"))
     kwargs["temperature"] = resolved.temperature
     kwargs["max_tokens"] = resolved.max_tokens
+    # Review requests carry 20-40k tokens of tool output and run several lanes at once; the
+    # application's per-request timeout (sized for short interview turns) is too tight.
+    kwargs["timeout"] = max(int(kwargs.get("timeout", 60)), REVIEW_REQUEST_TIMEOUT_S)
     if app_settings.inference_provider == "openai_compatible":
         kwargs["extra_body"] = {
             "chat_template_kwargs": {"enable_thinking": resolved.enable_thinking}

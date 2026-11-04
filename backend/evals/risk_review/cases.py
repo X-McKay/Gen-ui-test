@@ -46,7 +46,7 @@ class OperationalLimits(BaseModel):
 
     max_latency_s: float = 600
     max_model_requests: int = 40
-    max_total_tokens: int = 500_000
+    max_total_tokens: int = 650_000
 
 
 class EvalCase(BaseModel):

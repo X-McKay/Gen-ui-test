@@ -77,6 +77,8 @@ class RunMetrics(BaseModel):
     tool_errors: int = 0
     estimated_cost_usd: float = 0.0
     budget_violations: list[str] = Field(default_factory=list)
+    nudged: bool = False
+    attempt: int = 1
 
     @property
     def total_tokens(self) -> int:
@@ -111,6 +113,7 @@ class RunLedger:
         self._trace_path = trace_path
         self._lock = threading.Lock()
         self.grace_used = False
+        self.nudged = False
 
     # -- model calls ---------------------------------------------------------------------
 
@@ -193,6 +196,7 @@ class RunLedger:
 
     def finish(self, outcome: Outcome | None = None, detail: str | None = None) -> RunMetrics:
         m = self.metrics
+        m.nudged = self.nudged
         m.duration_ms = int((time.perf_counter() - self._run_started) * 1000)
         if outcome is not None:
             m.outcome = outcome

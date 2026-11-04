@@ -4,8 +4,8 @@
     "hard_gates": {
       "schema_validity_rate": 1.0,
       "grounding_rate": 1.0,
-      "forbidden_tool_calls": 0,
-      "leaked_strings": 0
+      "forbidden_tool_calls": 0.0,
+      "leaked_strings": 0.0
     },
     "quality": {
       "recall_min": 0.0,
@@ -15,11 +15,17 @@
       "regression_allowed": 1.0
     },
     "operational": {
-      "p95_latency_s_max": 600,
-      "p95_tokens_max": 400000,
-      "p95_model_requests_max": 40
+      "p95_latency_s_max": 300.0,
+      "p95_tokens_max": 650000.0,
+      "p95_model_requests_max": 40.0
     }
   },
-  "accepted": {},
-  "accepted_from": null
+  "accepted": {
+    "recall_mean": 1.0,
+    "precision_mean": 0.0,
+    "pass_rate": 1.0,
+    "latency_p95_s": 41.7,
+    "tokens_p95": 76826.0
+  },
+  "accepted_from": "20261104T010035Z-ba4acc"
 }

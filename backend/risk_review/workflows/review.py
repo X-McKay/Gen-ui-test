@@ -27,9 +27,10 @@ from risk_review.agents.lane_reviewer.tools.report_findings import LANE_KEY
 from risk_review.agents.lane_reviewer.tools.report_findings import OUTPUT_KEY as REVIEW_KEY
 from risk_review.agents.lane_reviewer.types import Finding, ReviewOutput
 from risk_review.observability.trace import RunMetrics
+from risk_review.runtime.assembly import BuiltAgent
 from risk_review.runtime.manifest import Manifest, git_commit
 from risk_review.settings import RiskReviewSettings
-from risk_review.steps.agent_step import run_agent_step
+from risk_review.steps.agent_step import StepResult, run_agent_step
 
 
 class VerifiedFinding(BaseModel):
@@ -96,6 +97,39 @@ def _verifier_message(lane: str, finding: Finding) -> str:
     )
 
 
+async def run_step_with_retry[T: BaseModel](
+    built: BuiltAgent,
+    *,
+    run_id: str,
+    user_message: str,
+    initial_state: dict[str, Any],
+    output_key: str,
+    output_model: type[T],
+    timeout_s: int,
+    trace_path: Path | None,
+) -> StepResult[T]:
+    """Retry transient failures (timeouts, connection errors) up to ``spec.retries`` times.
+    Every tool here is read-only and retry-safe, so a repeat cannot duplicate an effect."""
+    attempts = built.spec.retries + 1
+    result: StepResult[T] | None = None
+    for attempt in range(1, attempts + 1):
+        result = await run_agent_step(
+            built,
+            run_id=run_id if attempt == 1 else f"{run_id}-retry{attempt - 1}",
+            user_message=user_message,
+            initial_state=initial_state,
+            output_key=output_key,
+            output_model=output_model,
+            timeout_s=timeout_s,
+            trace_path=trace_path,
+        )
+        result.metrics.attempt = attempt
+        if result.metrics.outcome != "failed_transient":
+            break
+    assert result is not None
+    return result
+
+
 async def run_review(
     *,
     lanes: list[str],
@@ -121,7 +155,7 @@ async def run_review(
         )
         manifests.setdefault(built.spec.name, built.manifest)
         async with semaphore:
-            result = await run_agent_step(
+            result = await run_step_with_retry(
                 built,
                 run_id=f"{report_id}-{lane}",
                 user_message=_reviewer_message(lane, repository_root),
@@ -151,7 +185,7 @@ async def run_review(
         )
         manifests.setdefault(built.spec.name, built.manifest)
         async with semaphore:
-            result = await run_agent_step(
+            result = await run_step_with_retry(
                 built,
                 run_id=f"{report_id}-verify-{item.finding_id}",
                 user_message=_verifier_message(lane, item.finding),

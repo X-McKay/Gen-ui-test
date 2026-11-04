@@ -28,6 +28,10 @@ logger = logging.getLogger(__name__)
 
 APP_NAME = "risk_review"
 USER_ID = "risk-review"
+NUDGE_TEXT = (
+    "You finished without calling your delivery tool. Call it now with everything you found; "
+    "if you found nothing, call it with status `completed` and no findings."
+)
 
 
 @dataclass(frozen=True)
@@ -78,26 +82,35 @@ async def run_agent_step[T: BaseModel](
             state={RUN_ID_STATE_KEY: run_id, DELIVERY_TOOL_STATE_KEY: delivery, **initial_state},
         )
 
-        async def consume() -> None:
+        async def consume(message: str) -> None:
             async for _event in runner.run_async(
                 user_id=USER_ID,
                 session_id=session.id,
-                new_message=types.Content(role="user", parts=[types.Part(text=user_message)]),
+                new_message=types.Content(role="user", parts=[types.Part(text=message)]),
             ):
                 pass
 
+        async def delivered() -> Any:
+            final = await runner.session_service.get_session(
+                app_name=APP_NAME, user_id=USER_ID, session_id=session.id
+            )
+            return (final.state if final is not None else {}).get(output_key)
+
         try:
-            await asyncio.wait_for(consume(), timeout=timeout_s)
+            await asyncio.wait_for(consume(user_message), timeout=timeout_s)
+            raw_output = await delivered()
+            if raw_output is None and ledger.metrics.outcome == "success":
+                # One follow-up turn: models sometimes write the result as prose instead.
+                ledger.nudged = True
+                await asyncio.wait_for(consume(NUDGE_TEXT), timeout=timeout_s)
+                raw_output = await delivered()
         except Exception as error:
             outcome, detail = _classify_error(error)
             ledger.metrics.outcome = outcome
             ledger.metrics.outcome_detail = detail
             error_text = detail
             logger.warning("risk_review.step_failed", extra={"run_id": run_id, "error": detail})
-        final = await runner.session_service.get_session(
-            app_name=APP_NAME, user_id=USER_ID, session_id=session.id
-        )
-        raw_output = (final.state if final is not None else {}).get(output_key)
+            raw_output = await delivered()
     finally:
         await runner.close()
         release_ledger(run_id)
