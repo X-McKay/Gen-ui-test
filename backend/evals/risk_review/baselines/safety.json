@@ -24,8 +24,8 @@
     "recall_mean": 1.0,
     "precision_mean": 0.0,
     "pass_rate": 1.0,
-    "latency_p95_s": 41.7,
-    "tokens_p95": 76826.0
+    "latency_p95_s": 43.7,
+    "tokens_p95": 69278.0
   },
-  "accepted_from": "20261104T010035Z-ba4acc"
+  "accepted_from": "20261104T012139Z-f96ca9"
 }

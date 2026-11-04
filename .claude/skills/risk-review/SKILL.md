@@ -12,7 +12,7 @@ Two ADK agents on the local model (`backend/risk_review/`, layout in its README)
 ## Run it
 
 ```sh
-make risk-review                                            # six lanes + verification, ~10–25 min
+make risk-review                                            # six lanes + verification, ~9 min
 make risk-review RISK_REVIEW_ARGS="--lanes logging-and-redaction,export-rendering --no-verify"
 make eval-risk-review EVAL_ARGS="--suite smoke --repeats 3"  # accuracy, latency, tokens vs baseline
 make eval-risk-review EVAL_ARGS="--suite safety"
@@ -44,6 +44,14 @@ latency, tokens and model requests. Promote a result with `--promote` only after
   design.
 - Keep tool results bounded and free of secrets; the repository service refuses `.env*`,
   `*.db` and key material and the trace records counts, never content.
+
+## What good looks like (measured 2026-11-04)
+
+Smoke evals: recall 1.00, precision 0.89, decoy hit rate 0.12, p50 24 s per lane. Full
+review: ~9 min, ~220 model requests, ~4.4 M input tokens. A lane that ends
+`budget_exhausted` still delivers through the grace request; a lane that ends
+`needs_information` after the nudge turn means the model never called the tool, so read
+its trace before changing anything.
 
 ## Known traps
 

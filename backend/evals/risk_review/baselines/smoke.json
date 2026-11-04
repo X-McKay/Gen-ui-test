@@ -22,10 +22,10 @@
   },
   "accepted": {
     "recall_mean": 1.0,
-    "precision_mean": 0.8833,
+    "precision_mean": 0.8917,
     "pass_rate": 0.875,
-    "latency_p95_s": 137.6,
-    "tokens_p95": 92097.0
+    "latency_p95_s": 277.4,
+    "tokens_p95": 575182.0
   },
-  "accepted_from": "20261104T003621Z-9b3a13"
+  "accepted_from": "20261104T011400Z-32f471"
 }
