@@ -147,23 +147,18 @@ def test_owning_lane_wins_whatever_the_confidence() -> None:
     merged = merge_facts(
         [
             _lane(
-                "data-and-privacy",
-                {"field": "controls.in_place", "value": ["pii_minimisation"], "confidence": 0.9},
+                "ai-usage",
+                {"field": "ai_system.autonomy_level", "value": "decides", "confidence": 0.9},
             ),
             _lane(
-                "controls-in-code",
-                {
-                    "field": "controls.in_place",
-                    "value": ["none"],
-                    "confidence": 0.7,
-                    "basis": "absence",
-                },
+                "purpose-and-users",
+                {"field": "ai_system.autonomy_level", "value": "recommends", "confidence": 0.7},
             ),
         ]
     )
-    [controls] = merged
-    assert controls.lane == "controls-in-code" and controls.value == ["none"]
-    assert controls.conflicts == ["data-and-privacy: ['pii_minimisation'] (0.90)"]
+    [autonomy] = merged
+    assert autonomy.lane == "purpose-and-users" and autonomy.value == "recommends"
+    assert autonomy.conflicts == ["ai-usage: 'decides' (0.90)"]
 
 
 def test_build_record_marks_provenance_and_rejects_bad_values() -> None:
@@ -227,3 +222,83 @@ def test_factory_builds_every_lane(tiny_repo: Path) -> None:
     ]
     built = build_fact_finder(lane="data-and-privacy", repository_root=tiny_repo)
     assert "record_facts" in built.manifest.tools and len(built.active_skills) == 2
+
+
+def test_domain_without_its_vocabulary_in_the_quotes_needs_confirmation() -> None:
+    merged = merge_facts(
+        [
+            _lane(
+                "purpose-and-users",
+                {
+                    "field": "use_case.domains",
+                    "value": ["credit_insurance"],
+                    "confidence": 0.95,
+                    "evidence": [
+                        {"file": "README.md", "line": 1, "quote": "# Claims Fast-Track"},
+                        {"file": "README.md", "line": 5, "quote": "settled automatically"},
+                    ],
+                },
+                {
+                    "field": "use_case.affects_legal_or_significant_effects",
+                    "value": True,
+                    "confidence": 0.9,
+                    "evidence": [{"file": "README.md", "line": 5, "quote": "claims are paid"}],
+                },
+            )
+        ]
+    )
+    by_field = {fact.field: fact for fact in merged}
+    assert by_field["use_case.domains"].value == ["credit_insurance"]
+    assert by_field["use_case.domains"].confidence == 0.6
+    assert by_field["use_case.affects_legal_or_significant_effects"].confidence == 0.9
+
+
+def test_controls_merge_as_a_union_and_none_never_beats_a_found_control() -> None:
+    merged = merge_facts(
+        [
+            _lane(
+                "controls-in-code",
+                {
+                    "field": "controls.in_place",
+                    "value": ["none"],
+                    "confidence": 0.6,
+                    "basis": "absence",
+                },
+            ),
+            _lane(
+                "third-party-services",
+                {
+                    "field": "controls.in_place",
+                    "value": ["vendor_data_protections"],
+                    "confidence": 0.9,
+                },
+            ),
+            _lane(
+                "data-and-privacy",
+                {
+                    "field": "controls.in_place",
+                    "value": ["access_controls", "pii_minimisation"],
+                    "confidence": 0.8,
+                },
+            ),
+        ]
+    )
+    controls = next(fact for fact in merged if fact.field == "controls.in_place")
+    assert controls.value == ["vendor_data_protections", "access_controls", "pii_minimisation"]
+    assert controls.confidence == 0.8
+    assert controls.lane == "third-party-services+data-and-privacy"
+    assert controls.conflicts == ["controls-in-code: ['none'] (0.60)"]
+    only_none = merge_facts(
+        [
+            _lane(
+                "controls-in-code",
+                {
+                    "field": "controls.in_place",
+                    "value": ["none"],
+                    "confidence": 0.6,
+                    "basis": "absence",
+                },
+            )
+        ]
+    )
+    assert only_none[0].value == ["none"] and only_none[0].lane == "controls-in-code"

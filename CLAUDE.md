@@ -13,7 +13,7 @@ Read this first; it is the contract the tests enforce. Details live in `README.m
 | `backend/app/inference/` | LiteLLM factory, `ScriptedLlm` mock, tool-calling extraction |
 | `backend/app/repo_analysis/` | Clone (allowlisted, shallow, capped), inventory, signal detectors, summariser |
 | `backend/app/export/` | JSON export, WeasyPrint PDF, webhook |
-| `backend/fixtures/repos/` | The two fixture repositories served outside production |
+| `backend/fixtures/repos/` | The four fixture repositories served outside production and used as eval cases |
 | `backend/risk_review/` | Agent-based risk review and repository risk assessment (ADK, local model): `lane_reviewer`, `finding_verifier`, `fact_finder` agents with spec/skills/tools, workflows, evals in `backend/evals/` |
 | `frontend/generative-ui/` | The A2UI catalog (≤ 8 components) and the step form state |
 | `frontend/components/` | Review page, landing, repo form, theme, shadcn `ui/` |

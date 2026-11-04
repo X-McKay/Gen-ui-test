@@ -56,7 +56,10 @@ def test_grounded_and_negative_values_pass_through() -> None:
         ExtractedField(path="controls.in_place", value=["none"], confidence=0.9, evidence=None),
         ExtractedField(path="project.name", value="Turnstiles", confidence=0.9, evidence=None),
     ]
-    assert ground_fields(fields, TEXT) == fields
+    grounded = ground_fields(fields, TEXT)
+    assert grounded[: len(fields)] == fields
+    # The only addition is the definitional one: identification implies biometric data.
+    assert [f.path for f in grounded[len(fields) :]] == ["data.special_category_data"]
 
 
 def test_ungrounded_risk_values_are_capped_or_dropped() -> None:
@@ -131,3 +134,68 @@ def test_controls_need_their_vocabulary_in_the_text() -> None:
         )
     ]
     assert ground_fields(fields, text)[0].value == ["access_controls"]
+
+
+def test_domains_and_effects_need_their_vocabulary_in_the_evidence() -> None:
+    from app.inference.structured_extraction import vocabulary_supported
+
+    assert vocabulary_supported("use_case.domains", ["other"], "a shop")
+    assert vocabulary_supported(
+        "use_case.domains", ["critical_infrastructure"], "sheds load at a substation"
+    )
+    assert not vocabulary_supported(
+        "use_case.domains", ["critical_infrastructure"], "blocks network addresses"
+    )
+    assert not vocabulary_supported(
+        "use_case.domains", ["credit_insurance"], "motor-insurance claims model"
+    )
+    assert vocabulary_supported(
+        "use_case.domains", ["credit_insurance"], "prices health-insurance premiums"
+    )
+    assert vocabulary_supported(
+        "use_case.affects_legal_or_significant_effects", True, "claims are paid"
+    )
+    assert not vocabulary_supported(
+        "use_case.affects_legal_or_significant_effects", True, "a weekly summary"
+    )
+    assert vocabulary_supported("use_case.affects_legal_or_significant_effects", False, None)
+    text = "A fraud model blocks card transactions for our retail banking customers."
+    fields = [
+        ExtractedField(
+            path="use_case.domains",
+            value=["credit_insurance"],
+            confidence=1.0,
+            evidence="blocks card transactions for our retail banking customers",
+        ),
+        ExtractedField(
+            path="use_case.affects_legal_or_significant_effects",
+            value=True,
+            confidence=0.9,
+            evidence="blocks card transactions",
+        ),
+    ]
+    grounded = {f.path: f for f in ground_fields(fields, text)}
+    assert grounded["use_case.domains"].value == ["credit_insurance"]
+    assert grounded["use_case.domains"].confidence == UNGROUNDED_CONFIDENCE
+    assert grounded["use_case.affects_legal_or_significant_effects"].confidence == 0.9
+
+
+def test_biometric_identification_implies_biometric_special_category() -> None:
+    from app.inference.structured_extraction import reconcile_fields
+
+    text = "A camera matches each employee's face against the enrolled badge photo."
+    fields = [
+        ExtractedField(
+            path="data.biometric_identification",
+            value=True,
+            confidence=0.9,
+            evidence="matches each employee's face against the enrolled badge photo",
+        ),
+        ExtractedField(path="data.special_category_data", value=[], confidence=0.85),
+    ]
+    grounded = {f.path: f for f in ground_fields(fields, text)}
+    assert grounded["data.special_category_data"].value == ["biometric"]
+    assert reconcile_fields(fields[:1])[-1].path == "data.special_category_data"
+    assert reconcile_fields(fields[:1])[-1].confidence == 0.9
+    untouched = [ExtractedField(path="data.biometric_identification", value=False, confidence=0.9)]
+    assert reconcile_fields(untouched) == untouched

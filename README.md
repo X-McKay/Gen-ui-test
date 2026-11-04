@@ -114,20 +114,25 @@ in the repository's files:
    of the run (requests, tokens, tool calls, time per lane).
 
 The model never rates risk; it only establishes facts, and only facts with evidence. The
-two fixture repositories double as eval cases (`make eval-intake EVAL_ARGS="--suite repos"`).
+four fixture repositories (`hr_screening`, `log_search`, `claims_settlement`, `ops_agent`)
+double as eval cases (`make eval-intake EVAL_ARGS="--suite repos"`).
 
 Measured on the local model (`docs/risk-reviews/`):
 
 | Eval | Result |
 | --- | --- |
-| Descriptions, 27 cases x 2 runs | pass rate 0.74, field accuracy 0.88, control false positives 0, silent missed risks 0, inherent and residual tier exact 0.89; risk false positives in 19 % of runs, almost all an Annex III domain assigned on a borderline description; p50 21 s per extraction |
+| Descriptions, `facts` suite, 27 cases x 2 runs | pass rate 0.70, field accuracy 0.95, control false positives 0, silent missed risks 0, risk false positives in 6 % of runs (19 % before the vetting round); inherent tier exact 0.83, residual 0.76, the gap being Annex III values kept at confidence 0.6 that become confirmation questions; p50 19 s per extraction |
+| Descriptions, `scenarios` suite, 27 new use-case types x 2 runs | pass rate 0.72 (0.44 when first run unseen), field accuracy 0.95, risk false positives 0, control false positives 0, missed risks in 4 % of runs, inherent tier exact 0.87, residual 0.80 |
 | Repository, `hr_screening` fixture | 37 grounded facts, EU high-risk, inherent high, residual medium if the claimed controls are confirmed, 313 s, 52 requests, 418 k input tokens |
-| Repository suite, both fixtures through the agents | field accuracy 0.89 (hr_screening 0.95 with both tiers exact and no false positive; log_search 0.81 with autonomy rated one step too high, which tipped a low to medium), control false positives 0, 260–290 s and 0.5–0.7 M input tokens per repository |
+| Repository suite, four fixtures through the agents | field accuracy 0.88, inherent tier exact on all four, residual exact on three (hr_screening 0.95, ops_agent 0.94, claims_settlement 0.86, log_search 0.76); what remains are one-fact judgment calls that vary between runs (whether a form-based app "interacts", whether code without an auth dependency has access controls); 135 s median, up to 290 s, 0.4–1.1 M input tokens per repository |
 
 Evidence grounding in code did most of the work: a risk-raising value whose evidence quote is
 not in the description is capped at low confidence (so the owner is asked) or dropped
-(domains and controls), and a claimed control must be named in the text. Before that, control
-false positives were 18 in 54 runs and the pass rate was 0.30.
+(domains and controls), a claimed control must be named in the text, and an Annex III domain
+or a significant effect must have its vocabulary in the evidence quote (`DOMAIN_KEYWORDS`,
+`EFFECT_KEYWORDS` in `inference/structured_extraction.py`; the fact finder applies the same
+rule to its quoted lines), otherwise the value is kept but needs confirmation. Before any of
+that, control false positives were 18 in 54 runs and the pass rate was 0.30.
 
 ### Surface lifecycle
 
@@ -208,7 +213,7 @@ All settings come from the environment (`backend/app/settings.py`, pydantic-sett
 | `INFERENCE_TIMEOUT_S` | `60` | Per-call model timeout. |
 | `INFERENCE_MAX_RETRIES` | `2` | LiteLLM retries. |
 | `MOCK_MODEL` | `0` | `1` swaps in `ScriptedLlm`: same tools, same `render_ui` calls, no network. |
-| `ENVIRONMENT` | `development` | `development`, `test` or `production`. Outside `production` the two fixture repositories (`https://github.com/intake-fixtures/hr-screening`, `.../log-search`) are served from bundled directories without a clone. |
+| `ENVIRONMENT` | `development` | `development`, `test` or `production`. Outside `production` the four fixture repositories (`https://github.com/intake-fixtures/hr-screening`, `.../log-search`, `.../claims-settlement`, `.../ops-agent`) are served from bundled directories without a clone. |
 | `LOG_LEVEL` | `INFO` | Root log level. |
 | `LOG_AGUI_EVENTS` | `0` | `1` raises the AG-UI/ADK loggers to DEBUG (they echo message content; local debugging only). |
 | `DATABASE_URL` | `sqlite:///./intake.db` | Any SQLAlchemy URL, e.g. `postgresql+psycopg://…`. |
@@ -243,7 +248,7 @@ extraction in `structured_extraction.py` (no JSON mode, so it works on vLLM).
 | Schema contract | `make check-schema` | `schema/intake.schema.json` must match the Pydantic model and `frontend/lib/intakeTypes.ts` must match the schema. `make export-schema` regenerates both. |
 | End to end, mock | `make e2e` | Playwright on chromium, firefox, webkit and Pixel 7; `playwright.config.ts` starts both servers with `MOCK_MODEL=1`. Specs in `frontend/e2e/`. |
 | End to end, live | `make e2e-live` | Same specs with `E2E_LIVE=1` against the real endpoint; counts relax to the plan's bounds. |
-| Intake assessment evals | `make eval-intake` | `backend/evals/intake_assessment/`: use-case descriptions with gold facts, hard negatives (AI only in the name, device fingerprints, planned controls, fit scores that are not social scoring) and the inherent/residual tiers the engine must derive. Runs the real extraction on the configured model; reports field accuracy, **risk false positives**, **control false positives**, missed risks, tier agreement, latency and tokens, and gates against `baselines/facts.json`. |
+| Intake assessment evals | `make eval-intake` | `backend/evals/intake_assessment/`: suites `facts` (27 descriptions: generative AI, classical ML, no AI, PII, biometrics, planned controls, prohibited practices), `scenarios` (27 more: agentic automation, retrieval assistants, critical infrastructure, insurance, legal, education, law enforcement, migration, media, marketing, security operations, healthcare, trading, public services, children, accessibility, workforce management, with traps for specific false positives) and `repos` (the four fixture repositories through the fact-finder agents). Each case carries gold facts and the inherent/residual tiers the engine must derive. Runs the real extraction or the agents on the configured model; reports field accuracy, **risk false positives**, **control false positives**, missed risks, tier agreement, confident risk values on fields the case does not list (reported, not gated), latency and tokens, and gates against `baselines/<suite>.json`. |
 | Interactive | `make e2e-ui` | Playwright UI mode. Set `E2E_EXTERNAL_SERVERS=1` to reuse already-running servers. |
 
 Locally the same checks run as pre-commit hooks after `make setup`. CI (`.github/workflows/ci.yml`) runs `backend`, `schema` and `frontend` on every pull request

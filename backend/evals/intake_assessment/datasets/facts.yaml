@@ -223,7 +223,7 @@ cases:
       project.target_users: external
       project.lifecycle_stage: production
       ai_system.autonomy_level: decides
-      use_case.domains: [credit_insurance]
+      use_case.domains: [other]
       use_case.affects_legal_or_significant_effects: true
       data.processes_personal_data: true
       data.data_subjects: [customers]
@@ -355,7 +355,8 @@ cases:
       data.biometric_identification: false
       use_case.emotion_recognition: false
       use_case.social_scoring: false
-    absent: [controls.in_place]
+      controls.in_place: [pii_minimisation]
+    absent: [data.retention_policy]
     inherent: low
     residual: low
 

@@ -117,9 +117,9 @@ the intake needs, each grounded in a line of the repository.
 | --- | --- |
 | Agent spec, instruction, lane skills | `agents/fact_finder/{agent.yaml,instructions/system.md,skills/*/SKILL.md}` |
 | Delivery tool | `agents/fact_finder/tools/record_facts.py`: value validated against the intake record (coerced and set exactly as the product does), every evidence quote checked against the file, facts accumulate per field |
-| Workflow | `workflows/assess.py`: lanes in parallel, facts merged (the owning lane wins, then confidence; disagreements kept), record built with `source="repo:<file>"`, rules engine run, residual shown unconfirmed and "if confirmed", open questions listed |
+| Workflow | `workflows/assess.py`: lanes in parallel, facts merged (the owning lane wins, then confidence; disagreements kept; `controls.in_place` is the union of every control a lane found with a verified line, and `none` stands only when no lane found one), an Annex III domain or a significant effect without its vocabulary in the quoted lines is kept at confidence 0.6 (needs confirmation), record built with `source="repo:<file>"`, rules engine run, residual shown unconfirmed and "if confirmed", open questions listed |
 | Report | `observability/report.py::render_assessment_markdown` and `assessment.json` |
-| Eval | `evals/intake_assessment` suite `repos`: the fixture repositories with gold facts, scored like description extraction, with agent-scale operational thresholds in `baselines/repos.json` |
+| Eval | `evals/intake_assessment` suite `repos`: the four fixture repositories (`hr_screening`, `log_search`, `claims_settlement`, `ops_agent`) with gold facts, scored like description extraction, with agent-scale operational thresholds in `baselines/repos.json` |
 
 The lanes are `purpose-and-users`, `ai-usage`, `data-and-privacy`, `third-party-services`
 and `controls-in-code`. A sixth lane is a new skill directory plus its entry in

@@ -84,7 +84,10 @@ RISK_LIST_MEMBERS: dict[str, frozenset[str]] = {
     "use_case.domains": frozenset(d.value for d in ANNEX_III_DOMAINS),
 }
 
-Outcome = Literal["correct", "wrong", "missing", "unsupported", "implicit_ok"]
+# ``unlisted``: a confident risk-raising value on a field the case neither expects nor lists as
+# absent. It is not a gate (the gold is silent) but it is reported, so a reviewer can decide
+# whether the case needs the field or the model over-reads the text.
+Outcome = Literal["correct", "wrong", "missing", "unsupported", "implicit_ok", "unlisted"]
 Direction = Literal["riskier", "safer", "same", "different"]
 
 
@@ -239,6 +242,18 @@ def _missing_is_a_missed_risk(field: str, expected: object) -> bool:
     return False
 
 
+def _raises_risk(field: str, value: object) -> bool:
+    """True when ``value`` would add inherent-risk points or a legal effect on ``field``."""
+    if field in RISK_BOOLEANS:
+        return value is True
+    if field in RISK_RANKS:
+        return isinstance(value, str) and value in RISK_RANKS[field][1:]
+    members = RISK_LIST_MEMBERS.get(field)
+    if members is not None and isinstance(value, list):
+        return any(str(item) in members for item in value)
+    return False
+
+
 def _control_kinds(value: object) -> set[str]:
     if not isinstance(value, list):
         return set()
@@ -316,7 +331,20 @@ def score_fields(case: AssessmentCase, extracted: list[ExtractedField]) -> list[
             continue
         implicit = _implicit_expectation(field)
         if implicit is None:
-            continue  # neither listed nor a risk field: not scored
+            # Neither listed nor a sensitive practice: not scored, but a confident risk-raising
+            # value is reported so the gold or the hints can be reviewed.
+            value = coerce_value(field, item.value)
+            if item.confidence >= CONFIDENT and _raises_risk(field, value):
+                outcomes.append(
+                    FieldOutcome(
+                        field=field,
+                        predicted=value,
+                        confidence=item.confidence,
+                        outcome="unlisted",
+                        direction="riskier",
+                    )
+                )
+            continue
         value = coerce_value(field, item.value)
         where = direction(field, implicit, value)
         control_fps = sorted(_control_kinds(value)) if field == CONTROLS else []

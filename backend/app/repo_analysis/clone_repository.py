@@ -38,6 +38,9 @@ FIXTURES_DIRECTORY = Path(__file__).resolve().parents[2] / "fixtures" / "repos"
 FIXTURE_REPOSITORIES: dict[str, Path] = {
     "https://github.com/intake-fixtures/hr-screening": FIXTURES_DIRECTORY / "hr_screening",
     "https://github.com/intake-fixtures/log-search": FIXTURES_DIRECTORY / "log_search",
+    "https://github.com/intake-fixtures/claims-settlement": FIXTURES_DIRECTORY
+    / "claims_settlement",
+    "https://github.com/intake-fixtures/ops-agent": FIXTURES_DIRECTORY / "ops_agent",
 }
 
 BLOCKED_HOSTS: frozenset[str] = frozenset({"localhost", "localhost.localdomain", "0.0.0.0"})

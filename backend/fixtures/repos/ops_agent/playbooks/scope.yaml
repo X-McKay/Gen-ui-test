@@ -1,0 +1,9 @@
+# Hosts and account groups the agent may act on without approval.
+hosts:
+  - pattern: "app-*.fra.internal"
+  - pattern: "app-*.dub.internal"
+account_groups:
+  - "staff-standard"       # password resets allowed
+exclusions:
+  - "domain-admins"        # never touched by the agent
+  - "db-*"                 # database hosts excluded

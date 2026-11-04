@@ -53,8 +53,64 @@ cases:
       data.data_sources: [logs]
       use_case.social_scoring: false
       use_case.emotion_recognition: false
-      controls.in_place: [access_controls]
-    absent: [data.retention_policy]
+      data.retention_policy: under_30_days
+      controls.in_place: [access_controls, pii_minimisation]
     inherent: low
     residual: low
-    note: README states no personal data (hashed ids, IPs dropped), self-hosted vLLM with OpenAI fallback, platform team behind SSO, pilot.
+    note: README and privacy.md state hashed ids and IPs dropped at ingest (minimisation), 30-day retention, self-hosted vLLM with OpenAI fallback, platform team behind SSO, pilot.
+
+  - id: repo-claims-settlement
+    tags: [repository, ml, external, decides, trap-credit-domain]
+    repository: fixtures/repos/claims_settlement
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      ai_system.fine_tuned_or_trained: true
+      project.target_users: external
+      project.lifecycle_stage: production
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: true
+      use_case.generates_synthetic_content: false
+      use_case.interacts_directly_with_people: false
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: true
+      data.processes_personal_data: true
+      data.data_subjects: [customers]
+      data.special_category_data: []
+      data.biometric_identification: false
+      data.trains_on_personal_data: true
+      data.cross_border_transfer: false
+      use_case.social_scoring: false
+      use_case.emotion_recognition: false
+      controls.in_place: [access_controls, pre_release_evaluation, user_disclosure, pii_minimisation]
+    inherent: high
+    residual: low
+    note: README states automatic settlement under EUR 2,000, handler reopen, OAuth2 and the handler role; data_protection.md states customers are told an automated estimate may settle the claim; model_card.md states claimant names were dropped before training (minimisation); model_card.md states LightGBM trained in-house on claims with postcode and the pre-launch validation; data_protection.md lists name, address, IBAN, registration, EEA only. Motor claims are not Annex III credit_insurance.
+
+  - id: repo-ops-agent
+    tags: [repository, agentic, genai, internal, decides, plan-trap]
+    repository: fixtures/repos/ops_agent
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      ai_system.model_types: [llm]
+      project.target_users: internal
+      project.lifecycle_stage: production
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      use_case.generates_synthetic_content: true
+      use_case.interacts_directly_with_people: false
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: false
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      data.biometric_identification: false
+      use_case.social_scoring: false
+      use_case.emotion_recognition: false
+      controls.in_place: [access_controls, incident_response, vendor_data_protections]
+    absent: [data.special_category_data]
+    inherent: high
+    residual: medium
+    note: README and loop.py state the agent runs playbooks with no approval step; data_handling.md states commercial API terms with no training on the data; roadmap.md lists approval, redaction and an injection filter as planned (must not count); OIDC console, kill switch with rollback and the audit log are in place.

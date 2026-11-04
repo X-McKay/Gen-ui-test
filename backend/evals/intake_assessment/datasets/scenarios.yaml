@@ -1,0 +1,716 @@
+# Second batch of use-case descriptions, chosen for breadth: agentic automation, retrieval
+# assistants, operations and critical infrastructure, insurance, legal, education, law
+# enforcement, migration, media, marketing, security operations, healthcare, trading, public
+# services, children, accessibility and workforce management. Several cases are traps for a
+# specific false positive (named in the note).
+#
+# `inherent` and `residual` are the tiers the engine derives from `expected` once everything is
+# confirmed; the loader checks them, so a wrong tier here fails fast.
+
+cases:
+  # --- Agentic automation ----------------------------------------------------------------------
+  - id: agent-it-ticket-remediation
+    tags: [agentic, genai, internal, decides]
+    description: >
+      An internal IT operations agent built on Anthropic's Claude through the API. It reads new
+      service-desk tickets, picks a remediation playbook (restart a service, clear a disk, reset
+      a password) and runs it on our servers straight away, then posts a summary comment on the
+      ticket. Nobody approves an action before it runs. Tickets contain employees' names, email
+      addresses and sometimes screenshots. Engineers sign in with SSO to see the agent console,
+      every action is written to an audit log, and there is a kill switch that stops the agent
+      and rolls back its last change.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: internal
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: false
+      use_case.generates_synthetic_content: true
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      controls.in_place: [access_controls, incident_response]
+    absent: [data.retention_policy]
+    inherent: high
+    residual: medium
+    note: Autonomy is the driver; the kill switch and SSO are real controls but do not bring it below medium.
+
+  - id: agent-procurement-orders
+    tags: [agentic, ml, internal, decides, financial]
+    description: >
+      A purchasing bot for our facilities team. An in-house gradient-boosting model forecasts
+      consumable stock per site and the bot places purchase orders with suppliers through their
+      APIs whenever a site is predicted to run short, as long as the order is under 5,000 euros.
+      Orders are placed without anyone approving them first; the finance team receives a weekly
+      summary. It works with supplier catalogues and site stock counts; there is no personal
+      data and no language model.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      project.target_users: internal
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: false
+      use_case.generates_synthetic_content: false
+      use_case.interacts_directly_with_people: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: false
+      data.biometric_identification: false
+      controls.in_place: [none]
+    absent: [data.retention_policy]
+    inherent: medium
+    residual: medium
+    note: Financial exposure through unattended spending; no personal data, so privacy stays low.
+
+  # --- Retrieval assistants ----------------------------------------------------------------------
+  - id: rag-hr-policy-assistant
+    tags: [genai, rag, internal, trap-hr-domain]
+    description: >
+      A chatbot for all staff that answers questions about our HR policies (leave, expenses,
+      parental benefits) by retrieving passages from the policy handbook and summarising them
+      with Azure OpenAI. It only reads the handbook; it has no access to employee records and
+      makes no decisions about anyone. Staff sign in with company SSO, a banner says the answers
+      are AI-generated, and the HR team spot-checks a sample of answers every week.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: internal
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+      controls.in_place: [access_controls, user_disclosure]
+    absent: [data.retention_policy]
+    inherent: medium
+    residual: low
+    note: Trap - it is about HR policy text, not decisions about workers; hr_employment would be a false positive.
+
+  # --- Operations and critical infrastructure -------------------------------------------------
+  - id: ops-predictive-maintenance
+    tags: [ml, internal, no-pii]
+    description: >
+      Vibration and temperature readings from the pumps in our two bottling plants feed an
+      XGBoost model we trained ourselves that predicts which pump is likely to fail in the next
+      two weeks. Maintenance planners look at the list each morning and decide what to service.
+      There is no personal data in the sensor feeds and the tool is only used by the plant
+      maintenance team.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      ai_system.fine_tuned_or_trained: true
+      project.target_users: internal
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      use_case.generates_synthetic_content: false
+      use_case.interacts_directly_with_people: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: false
+      data.biometric_identification: false
+    absent: [controls.in_place]
+    inherent: low
+    residual: low
+    note: Trap - a factory is not critical infrastructure under Annex III.
+
+  - id: ops-grid-load-shedding
+    tags: [ml, internal, annex-iii, critical-infrastructure]
+    description: >
+      We are a regional electricity distribution operator. A forecasting model we built
+      predicts substation load and, when a substation approaches its limit, the control
+      software automatically sheds load on the lowest-priority feeders. Grid operators in the
+      control room watch the system and can override any action. The inputs are aggregated
+      feeder measurements and weather data; no customer-level data is used. It has been live
+      for a year.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      project.target_users: internal
+      project.lifecycle_stage: production
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: true
+      use_case.domains: [critical_infrastructure]
+      use_case.affects_legal_or_significant_effects: false
+      use_case.generates_synthetic_content: false
+      data.processes_personal_data: false
+      data.biometric_identification: false
+    inherent: high
+    residual: medium
+    note: Annex III 2 safety component; the legal floor keeps residual at medium whatever the oversight.
+
+  # --- Legal and insurance -------------------------------------------------------------------
+  - id: legal-contract-clause-extraction
+    tags: [genai, internal, pii, controls]
+    description: >
+      Our legal team uses Anthropic Claude through AWS Bedrock to pull out termination,
+      liability and data-protection clauses from customer contracts and draft a one-page
+      summary memo. The contracts name the customer's signatories and contact persons. Lawyers
+      read the memo alongside the contract and make every call themselves. Only members of the
+      legal group, enforced through role-based access, can upload contracts, and our Bedrock
+      agreement states the provider does not retain or train on our prompts.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: internal
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      use_case.generates_synthetic_content: true
+      use_case.interacts_directly_with_people: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: true
+      data.data_subjects: [customers]
+      data.biometric_identification: false
+      controls.in_place: [access_controls, vendor_data_protections]
+    absent: [data.retention_policy]
+    inherent: medium
+    residual: low
+
+  - id: ins-claims-auto-settlement
+    tags: [ml, external, decides, pii, trap-credit-domain]
+    description: >
+      A motor-insurance claims model trained in-house on past claims. From the claim form,
+      photos of the damage and the policy record it estimates the repair cost; claims it
+      estimates under 2,000 euros are paid out automatically, the rest go to a claims handler.
+      Customers submit claims through our app. The data includes the claimant's name, address,
+      vehicle registration and the accident description. A claims handler can reopen any
+      automatic settlement, and the model was validated against a year of handler decisions
+      before launch.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      ai_system.fine_tuned_or_trained: true
+      project.target_users: external
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: true
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: true
+      use_case.generates_synthetic_content: false
+      data.processes_personal_data: true
+      data.data_subjects: [customers]
+      data.biometric_identification: false
+      data.special_category_data: []
+      controls.in_place: [pre_release_evaluation]
+    absent: [data.retention_policy]
+    inherent: high
+    residual: medium
+    note: Trap - claims settlement is neither creditworthiness nor life/health pricing, so credit_insurance would be a false positive; the payout decision is still a significant effect.
+
+  - id: ins-health-premium-pricing
+    tags: [ml, external, annex-iii, special-category]
+    description: >
+      A model that prices private health-insurance premiums for new applicants from their
+      medical questionnaire, age and postcode. It proposes a premium and an underwriter
+      reviews borderline cases before an offer is sent; routine cases go out with the model's
+      price. Applicants apply through brokers. The model is a gradient-boosted tree we trained
+      on ten years of policy and claims data. Underwriters sign in with named accounts and
+      roles.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      ai_system.fine_tuned_or_trained: true
+      project.target_users: internal
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      use_case.domains: [credit_insurance]
+      use_case.affects_legal_or_significant_effects: true
+      data.processes_personal_data: true
+      data.special_category_data: [health]
+      data.data_subjects: [customers]
+      data.trains_on_personal_data: true
+      data.biometric_identification: false
+      controls.in_place: [access_controls]
+    absent: [data.retention_policy]
+    inherent: high
+    residual: high
+    note: Annex III 5(c) health insurance pricing with health data; underwriters are internal users, applicants are the data subjects; oversight alone cannot bring it down.
+
+  # --- Education ----------------------------------------------------------------------------
+  - id: edu-essay-grading
+    tags: [genai, annex-iii, minors, education]
+    description: >
+      A secondary-school platform where teachers upload pupils' essays and GPT-4o proposes a
+      grade and written feedback. Teachers review each proposed grade and comment before it
+      is released to the pupil and entered in the report card. Pupils are aged 12 to 18. The
+      platform is used by teachers at our partner schools and stores essays with the pupil's
+      name and class.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: external
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      use_case.domains: [education]
+      use_case.affects_legal_or_significant_effects: true
+      use_case.generates_synthetic_content: true
+      data.processes_personal_data: true
+      data.data_subjects: [minors]
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+    absent: [controls.in_place]
+    inherent: critical
+    residual: high
+
+  - id: edu-proctoring-stress-detection
+    tags: [prohibited, education, biometric, emotion]
+    description: >
+      Remote exam proctoring for a university. Before the exam the candidate's face is matched
+      against their student-card photo to confirm identity. During the exam the webcam feed is
+      analysed to track gaze and to flag candidates whose facial expressions indicate stress
+      or anxiety, which invigilators treat as a cheating signal. Candidates are adult students.
+    expected:
+      ai_system.uses_ai: true
+      project.target_users: external
+      use_case.domains: [education]
+      data.biometric_identification: true
+      use_case.emotion_recognition: true
+      data.processes_personal_data: true
+      data.special_category_data: [biometric]
+      use_case.affects_legal_or_significant_effects: true
+      use_case.social_scoring: false
+    inherent: critical
+    residual: critical
+    note: Emotion recognition in education is prohibited (Art. 5(1)(f)); the identity check is Annex III 1 on its own.
+
+  # --- Law enforcement, migration ---------------------------------------------------------------
+  - id: le-station-live-face-matching
+    tags: [prohibited, law-enforcement, biometric]
+    description: >
+      A pilot for the transport police: cameras in the main railway station stream to a face
+      recognition service that matches passers-by in real time against a watch list of wanted
+      persons and alerts officers on the platform. Everyone passing through the concourse is
+      scanned.
+    expected:
+      ai_system.uses_ai: true
+      project.lifecycle_stage: pilot
+      use_case.domains: [law_enforcement]
+      data.biometric_identification: true
+      use_case.remote_biometric_id_public_spaces: true
+      data.processes_personal_data: true
+      data.data_subjects: [public]
+      data.special_category_data: [biometric]
+    inherent: critical
+    residual: critical
+
+  - id: le-interview-transcription
+    tags: [ml, law-enforcement, annex-iii, special-category, trap-biometric]
+    description: >
+      A police force runs a self-hosted Whisper model to transcribe recorded suspect and
+      witness interviews so officers can search and quote them. Officers check transcripts
+      against the recording before they are used; the system does not identify speakers by
+      voice. Recordings concern criminal investigations and name the people involved. Access
+      is limited to the investigating team through the case-management system's permissions.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.model_source: open_weights
+      ai_system.gpai_model_used: false
+      project.target_users: internal
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      use_case.domains: [law_enforcement]
+      data.processes_personal_data: true
+      data.special_category_data: [criminal]
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.remote_biometric_id_public_spaces: false
+      controls.in_place: [access_controls]
+    inherent: high
+    residual: medium
+    note: Trap - voice is processed but nobody is identified by it, so biometric_identification is false; the domain still makes it Annex III.
+
+  - id: mig-visa-application-ranking
+    tags: [ml, annex-iii, migration, external]
+    description: >
+      For a national immigration authority we rank incoming short-stay visa applications by
+      a risk score so that caseworkers review the highest-scoring files first. The score uses
+      the applicant's travel history, sponsor details and application answers. Caseworkers
+      decide every application; the score only sets the order and a flag. Applicants are
+      members of the public applying from abroad.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      use_case.domains: [migration_border]
+      use_case.affects_legal_or_significant_effects: true
+      data.processes_personal_data: true
+      data.data_subjects: [public]
+      data.biometric_identification: false
+      use_case.social_scoring: false
+    absent: [controls.in_place]
+    inherent: high
+    residual: medium
+    note: Who operates a vendor-built tool at a client authority is ambiguous (its caseworkers or our staff), so target_users is not scored; the Annex III floor keeps the residual at medium.
+
+  # --- Media and content -------------------------------------------------------------------
+  - id: media-voice-clone-adverts
+    tags: [genai, internal, synthetic-media]
+    description: >
+      Our marketing studio uses ElevenLabs to generate voice-overs for radio and online
+      adverts by cloning the voice of an actor we have under contract, with her written
+      consent for this use. Producers type the script, review the audio and publish it to
+      the campaigns. The tool is used by three producers in the studio.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.model_source: third_party_api
+      project.target_users: internal
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      use_case.generates_synthetic_content: true
+      use_case.interacts_directly_with_people: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: true
+      data.biometric_identification: false
+    inherent: medium
+    residual: medium
+    note: Whether a voice-synthesis model is a general-purpose model is unsettled, so gpai_model_used is not scored. The voice recording is personal data sent to a third party; it is not used to identify anyone. Generated audio must be marked (Art. 50).
+
+  - id: media-manual-translation
+    tags: [genai, internal, no-pii]
+    description: >
+      We translate product manuals into twelve languages with DeepL's API and a GPT-4o pass
+      for terminology consistency. Professional translators review every page before
+      publication. The manuals contain no personal information.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: internal
+      ai_system.autonomy_level: assistive
+      ai_system.human_oversight: true
+      use_case.generates_synthetic_content: true
+      use_case.interacts_directly_with_people: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: false
+      data.biometric_identification: false
+    inherent: low
+    residual: low
+
+  # --- Marketing -----------------------------------------------------------------------------
+  - id: mkt-offer-targeting
+    tags: [ml, external, pii, decides]
+    description: >
+      A propensity model picks which promotional offer each logged-in customer sees on our
+      grocery app's home screen, using their purchase history and browsing in the app. The
+      choice is made automatically for every session; nobody reviews individual selections.
+      We trained the model on our own loyalty-card data. No health, ethnicity or other
+      sensitive attributes are used.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      ai_system.fine_tuned_or_trained: true
+      project.target_users: external
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: false
+      use_case.generates_synthetic_content: false
+      use_case.interacts_directly_with_people: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: true
+      data.data_subjects: [customers]
+      data.trains_on_personal_data: true
+      data.special_category_data: []
+      data.biometric_identification: false
+      use_case.manipulative_or_subliminal: false
+    absent: [controls.in_place]
+    inherent: high
+    residual: high
+
+  - id: mkt-checkout-assistant-persuasion-trap
+    tags: [genai, public, trap-manipulative]
+    description: >
+      A checkout assistant on our public web shop, built on GPT-4o, that answers shoppers'
+      questions, suggests bundles and writes persuasive product blurbs. When stock is low it
+      says so, always truthfully. Shoppers see a label that the assistant is automated. It
+      sees the shopper's cart and shipping address. There is no login requirement.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: public
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      use_case.manipulative_or_subliminal: false
+      data.processes_personal_data: true
+      data.data_subjects: [public]
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      controls.in_place: [user_disclosure]
+    inherent: high
+    residual: high
+    note: Trap - persuasive copy is ordinary marketing, not a manipulative or subliminal technique.
+
+  # --- Security operations ---------------------------------------------------------------------
+  - id: sec-network-intrusion-blocking
+    tags: [ml, internal, security, decides]
+    description: >
+      An anomaly-detection model we built scores network flows from our offices and data
+      centre and automatically blocks source addresses whose score crosses a threshold.
+      Analysts in the SOC see every block in their console and can lift it. The flow records
+      carry internal IP addresses and the usernames of staff on the VPN. The console is behind
+      the SOC's SSO group.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      project.target_users: internal
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: true
+      use_case.generates_synthetic_content: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      data.biometric_identification: false
+      controls.in_place: [access_controls]
+    inherent: medium
+    residual: low
+
+  # --- Healthcare ----------------------------------------------------------------------------
+  - id: health-ct-nodule-flagging
+    tags: [ml, annex-i, medical-device, special-category]
+    description: >
+      A convolutional network that marks suspected lung nodules on chest CT scans for the
+      radiologist, who reads every scan and writes the report. It is CE-marked as a class IIa
+      medical device. It runs inside the hospital's imaging network for the radiology
+      department, processes patient scans with the patient identifier, and was clinically
+      validated on a multi-site dataset before deployment.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      project.target_users: internal
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      use_case.domains: [medical_or_safety_component]
+      use_case.affects_legal_or_significant_effects: true
+      use_case.generates_synthetic_content: false
+      data.processes_personal_data: true
+      data.special_category_data: [health]
+      data.biometric_identification: false
+      controls.in_place: [pre_release_evaluation]
+    inherent: high
+    residual: high
+
+  - id: health-step-goal-app-trap
+    tags: [ml, public, pii, trap-medical]
+    description: >
+      A consumer walking app for adults. A small on-device model looks at the last four
+      weeks of step counts and suggests a weekly step goal, which the user can change. Users
+      create an account with their email address. It gives no medical advice and is not a
+      medical device.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      project.target_users: public
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      use_case.generates_synthetic_content: false
+      data.processes_personal_data: true
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+    inherent: medium
+    residual: medium
+    note: Trap - step counts and a goal suggestion are not a medical device or a safety component. Whether a changeable goal suggestion is assistive or recommends is a coin toss, so autonomy is not scored.
+
+  # --- Finance -------------------------------------------------------------------------------
+  - id: fin-algorithmic-trading
+    tags: [ml, internal, decides, financial, no-pii]
+    description: >
+      Our market-making desk runs a reinforcement-learning strategy that places and cancels
+      orders on European equity venues within pre-set position and loss limits. Trades are
+      executed automatically in milliseconds; the risk desk watches the book and has a kill
+      switch that flattens positions. Inputs are market data only; there is no personal data
+      and no language model.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      project.target_users: internal
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: true
+      use_case.generates_synthetic_content: false
+      use_case.interacts_directly_with_people: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: false
+      data.biometric_identification: false
+      controls.in_place: [incident_response]
+    inherent: low
+    residual: low
+    note: The tables see no personal data and no Annex III area; financial materiality is not a recorded fact (known gap).
+
+  # --- Public services ---------------------------------------------------------------------
+  - id: pub-benefits-prechecker
+    tags: [genai, public, annex-iii, essential-services, controls]
+    description: >
+      A city council chatbot built on GPT-4o that helps residents find out whether they may
+      qualify for housing benefit and pre-fills the application from their answers about
+      household size, income and rent. A caseworker decides every application; the chatbot
+      never grants or refuses anything. It is open to anyone on the council website, says it
+      is an automated assistant, runs input and output content filters, and strips names and
+      addresses before anything is sent to the model. A caseworker team reviews flagged
+      conversations.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: public
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      use_case.domains: [essential_services]
+      use_case.affects_legal_or_significant_effects: true
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      data.processes_personal_data: true
+      data.data_subjects: [public]
+      data.biometric_identification: false
+      use_case.social_scoring: false
+      controls.in_place: [user_disclosure, guardrails, pii_minimisation]
+    inherent: critical
+    residual: high
+    note: Public, generative, personal financial data and an Annex III 5(a) area; strong controls still leave it high.
+
+  # --- Children -----------------------------------------------------------------------------
+  - id: kids-companion-toy
+    tags: [genai, public, minors, no-controls]
+    description: >
+      A plush toy with a microphone that chats with children aged four to eight. Speech is
+      sent to a cloud speech-to-text service and the reply is written by a third-party large
+      language model and spoken back. The toy is sold to the public. Recordings are kept to
+      improve the product. We have not yet built any content filtering and nobody reviews the
+      conversations.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: true
+      ai_system.model_source: third_party_api
+      project.target_users: public
+      use_case.interacts_directly_with_people: true
+      use_case.generates_synthetic_content: true
+      ai_system.human_oversight: false
+      use_case.domains: [other]
+      data.processes_personal_data: true
+      data.data_subjects: [minors]
+      data.trains_on_personal_data: true
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      controls.in_place: [none]
+    inherent: high
+    residual: high
+
+  # --- Accessibility -----------------------------------------------------------------------
+  - id: access-live-captions-trap
+    tags: [ml, internal, pii, trap-biometric]
+    description: >
+      Live captions in our video meetings for colleagues with hearing loss, using Azure
+      Speech-to-Text. The audio of everyone in the meeting is transcribed; the service does
+      not identify who is speaking and we do not enrol voices. Captions are not stored after
+      the meeting. Available to all employees inside the company tenant.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.model_source: third_party_api
+      project.target_users: internal
+      ai_system.autonomy_level: assistive
+      use_case.interacts_directly_with_people: false
+      use_case.generates_synthetic_content: false
+      use_case.domains: [other]
+      use_case.affects_legal_or_significant_effects: false
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+    inherent: low
+    residual: low
+    note: Trap - voice audio without speaker identification is not biometric identification.
+
+  # --- Workforce management ---------------------------------------------------------------
+  - id: hr-productivity-scoring
+    tags: [ml, internal, annex-iii, hr]
+    description: >
+      A model that gives each employee in the sales organisation a weekly productivity score
+      from their email volume, calendar occupancy and CRM activity. Managers see the scores
+      in a dashboard and use them as one input to quarterly performance reviews; managers make
+      the review decisions. The model was built by our people-analytics team.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      project.target_users: internal
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      use_case.domains: [hr_employment]
+      use_case.affects_legal_or_significant_effects: true
+      use_case.generates_synthetic_content: false
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+      use_case.social_scoring: false
+    absent: [controls.in_place]
+    inherent: high
+    residual: medium
+
+  - id: hr-shift-rostering
+    tags: [ml, internal, annex-iii, hr, decides]
+    description: >
+      A rostering optimiser for our warehouses: a demand forecast we trained plus a solver
+      assigns shifts to each worker for the coming week. The roster goes live automatically
+      on Thursday unless the site HR manager edits it first, and workers can swap shifts in
+      the app. It uses workers' names, contracts, availability and past shifts.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      project.target_users: internal
+      ai_system.autonomy_level: decides
+      ai_system.human_oversight: true
+      use_case.domains: [hr_employment]
+      use_case.affects_legal_or_significant_effects: true
+      use_case.generates_synthetic_content: false
+      use_case.interacts_directly_with_people: false
+      data.processes_personal_data: true
+      data.data_subjects: [employees]
+      data.trains_on_personal_data: true
+      data.biometric_identification: false
+      use_case.emotion_recognition: false
+    absent: [controls.in_place]
+    inherent: high
+    residual: high
+    note: Task allocation to workers is Annex III 4(b); the forecast is trained on workers' past shifts; swapping shifts in an app is not conversing with the system.
+
+  # --- No AI -----------------------------------------------------------------------------
+  - id: noai-invoice-threshold-script
+    tags: [noai, internal]
+    description: >
+      A nightly Python script that reads the day's supplier invoices from the ERP, flags any
+      over 10,000 euros or from a supplier not on the approved list, and emails the list to
+      the finance controller for manual approval. It is a set of fixed rules; there is no
+      model of any kind. Invoices carry supplier company details only.
+    expected:
+      ai_system.uses_ai: false
+      project.target_users: internal
+      use_case.generates_synthetic_content: false
+      use_case.interacts_directly_with_people: false
+      data.processes_personal_data: false
+      data.biometric_identification: false
+    inherent: low
+    residual: low

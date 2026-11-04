@@ -18,6 +18,7 @@ from evals.intake_assessment.runner import (
     Thresholds,
     evaluate_gates,
     run_suite,
+    summarise_case,
     summarise_suite,
 )
 from evals.intake_assessment.scoring import direction, score_case
@@ -224,3 +225,21 @@ async def test_repository_case_runs_through_the_fact_finder(tmp_path: Path) -> N
     assert any(f.field == "ai_system.uses_ai" and f.outcome == "correct" for f in score.fields)
     assert score.inherent.relation == "under"  # one fact is not enough
     assert experiment.summary.runs == 1
+
+
+def test_confident_risk_value_on_an_unlisted_field_is_reported_not_gated() -> None:
+    unlisted = "data.trains_on_personal_data"
+    assert unlisted not in CHATBOT.expected and unlisted not in CHATBOT.absent
+    extra = [
+        ExtractedField(path=unlisted, value=True, confidence=0.9),
+        ExtractedField(path="data.cross_border_transfer", value=True, confidence=0.5),
+        *fields(**CHATBOT.expected),
+    ]
+    score = score_case(CHATBOT, extra)
+    reported = [f for f in score.fields if f.outcome == "unlisted"]
+    assert [f.field for f in reported] == [unlisted]
+    assert reported[0].direction == "riskier"
+    assert score.risk_false_positives == 0
+    assert score.correct_count == len(CHATBOT.expected)
+    summary = summarise_case(CHATBOT, [score])
+    assert f"{unlisted}: unlisted riskier" in summary.worst_fields

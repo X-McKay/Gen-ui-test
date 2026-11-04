@@ -1,0 +1,19 @@
+{
+  "suite": "scenarios",
+  "thresholds": {
+    "control_false_positives_max": 0,
+    "invalid_field_rate_max": 0.02,
+    "risk_false_positive_case_rate_max": 0.1,
+    "risk_missed_case_rate_max": 0.1,
+    "under_estimate_rate_max": 0.05,
+    "field_accuracy_min": 0.85,
+    "inherent_exact_min": 0.8,
+    "residual_exact_min": 0.8,
+    "pass_rate_min": 0.7,
+    "regression_allowed": 0.1,
+    "p95_latency_s_max": 30.0,
+    "p95_prompt_tokens_max": 16000
+  },
+  "accepted": {},
+  "accepted_from": null
+}

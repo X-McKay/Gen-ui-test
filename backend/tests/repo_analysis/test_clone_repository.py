@@ -95,6 +95,9 @@ def test_clone_environment_without_token_has_no_header() -> None:
 def test_fixture_mapping_points_at_bundled_repositories() -> None:
     assert FIXTURE_REPOSITORIES[HR_SCREENING_URL].is_dir()
     assert FIXTURE_REPOSITORIES[LOG_SEARCH_URL].is_dir()
+    for url, directory in FIXTURE_REPOSITORIES.items():
+        assert url.startswith("https://github.com/intake-fixtures/")
+        assert (directory / "README.md").is_file(), url
 
 
 def test_mock_mode_clone_copies_fixture_without_network(tmp_path: Path) -> None:

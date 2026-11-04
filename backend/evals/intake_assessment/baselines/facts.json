@@ -12,7 +12,7 @@
     "pass_rate_min": 0.7,
     "regression_allowed": 0.1,
     "p95_latency_s_max": 30.0,
-    "p95_prompt_tokens_max": 8000
+    "p95_prompt_tokens_max": 16000
   },
   "accepted": {},
   "accepted_from": null

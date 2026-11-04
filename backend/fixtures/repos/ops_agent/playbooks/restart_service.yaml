@@ -1,0 +1,7 @@
+name: restart_service
+description: Restart a failed systemd unit on an application host.
+steps:
+  - run: "systemctl restart {{ unit }}"
+  - verify: "systemctl is-active {{ unit }}"
+rollback:
+  - run: "systemctl start {{ unit }}"

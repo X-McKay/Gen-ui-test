@@ -196,7 +196,7 @@ def summarise_case(case: AssessmentCase, runs: list[CaseScore]) -> CaseSummary:
             f"{f.field}: {f.outcome}{' ' + f.direction if f.direction != 'same' else ''}"
             for r in runs
             for f in r.fields
-            if f.outcome in {"wrong", "missing", "unsupported"}
+            if f.outcome in {"wrong", "missing", "unsupported", "unlisted"}
         }
     )
     return CaseSummary(

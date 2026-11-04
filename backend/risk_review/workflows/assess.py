@@ -19,6 +19,7 @@ from google.adk.models.base_llm import BaseLlm
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.governance.classify import reclassify
+from app.inference.structured_extraction import UNGROUNDED_CONFIDENCE, vocabulary_supported
 from app.intake.gap_analysis import open_gaps
 from app.intake.question_bank import QUESTIONS_BY_FIELD
 from app.intake.record_service import coerce_value
@@ -138,6 +139,59 @@ FIELD_OWNERS: dict[str, str] = {
 }
 
 
+def _supported_confidence(fact: Fact) -> float:
+    """An Annex III domain or a significant effect needs its vocabulary in the quoted lines,
+    as in the description extractor; otherwise it is recorded but must be confirmed."""
+    quotes = " ".join(evidence.quote for evidence in fact.evidence)
+    if vocabulary_supported(fact.field, fact.value, quotes):
+        return fact.confidence
+    return min(fact.confidence, UNGROUNDED_CONFIDENCE)
+
+
+CONTROLS_FIELD = "controls.in_place"
+
+
+def _merge_controls(candidates: list[tuple[Fact, str]]) -> MergedFact:
+    """Controls are a union: a control one lane found with a verified line is a fact whatever
+    another lane concluded, and ``none`` (a fact from absence) stands only when no lane found
+    any control. The reported confidence is the lowest among the contributing lanes."""
+    positive = [
+        (fact, lane)
+        for fact, lane in candidates
+        if isinstance(fact.value, list) and any(str(kind) != "none" for kind in fact.value)
+    ]
+    if not positive:
+        best, lane_name = candidates[0]
+        kinds: list[str] = ["none"]
+        confidence = best.confidence
+        contributing = [(best, lane_name)]
+    else:
+        kinds = []
+        for fact, _ in positive:
+            for kind in fact.value if isinstance(fact.value, list) else []:
+                if str(kind) != "none" and str(kind) not in kinds:
+                    kinds.append(str(kind))
+        best, lane_name = positive[0]
+        confidence = min(fact.confidence for fact, _ in positive)
+        contributing = positive
+    conflicts = [
+        f"{lane}: {fact.value!r} ({fact.confidence:.2f})"
+        for fact, lane in candidates
+        if (fact, lane) not in contributing
+    ]
+    return MergedFact(
+        field=CONTROLS_FIELD,
+        value=kinds,
+        confidence=confidence,
+        basis=best.basis,
+        lane=lane_name if len(positive) <= 1 else "+".join(lane for _, lane in positive),
+        evidence_file=best.evidence[0].file,
+        evidence_line=best.evidence[0].line,
+        evidence_quote=best.evidence[0].quote,
+        conflicts=conflicts,
+    )
+
+
 def merge_facts(lanes: list[LaneFacts]) -> list[MergedFact]:
     """One value per field: the owning lane wins, else the highest confidence; the other
     values are kept as conflicts."""
@@ -149,6 +203,9 @@ def merge_facts(lanes: list[LaneFacts]) -> list[MergedFact]:
     for field, candidates in by_field.items():
         owner = FIELD_OWNERS.get(field)
         candidates.sort(key=lambda item: (item[1] == owner, item[0].confidence), reverse=True)
+        if field == CONTROLS_FIELD:
+            merged.append(_merge_controls(candidates))
+            continue
         best, lane_name = candidates[0]
         conflicts = [
             f"{other_lane}: {other.value!r} ({other.confidence:.2f})"
@@ -159,7 +216,7 @@ def merge_facts(lanes: list[LaneFacts]) -> list[MergedFact]:
             MergedFact(
                 field=field,
                 value=best.value,
-                confidence=best.confidence,
+                confidence=_supported_confidence(best),
                 basis=best.basis,
                 lane=lane_name,
                 evidence_file=best.evidence[0].file,

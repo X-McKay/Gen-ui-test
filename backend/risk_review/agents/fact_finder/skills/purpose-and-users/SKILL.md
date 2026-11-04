@@ -25,6 +25,10 @@ metadata:
 - `use_case.interacts_directly_with_people`, `use_case.generates_synthetic_content`,
   `use_case.affects_legal_or_significant_effects`, `use_case.emotion_recognition`,
   `use_case.social_scoring`.
+  `interacts_directly_with_people` is true only when people converse with the system
+  itself (chat, voice, an assistant that answers them). Uploading a file, filling a form
+  or using an app in which the output appears (a summary, an estimate, a roster) is not
+  direct interaction: record false with the route or handler as evidence.
 - `ai_system.autonomy_level` (assistive, recommends, decides), `ai_system.human_oversight`.
 
 ## Where to look

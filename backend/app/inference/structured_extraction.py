@@ -18,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.inference.model_factory import completion_kwargs
 from app.intake.heuristic_extractor import extract_heuristically
 from app.intake.question_bank import QUESTION_BANK, QuestionSpec
-from app.settings import get_settings
+from app.settings import Settings, get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +43,9 @@ FIELD_HINTS: dict[str, str] = {
         "False only when the text says the logic is fixed rules with no model at all."
     ),
     "ai_system.gpai_model_used": (
-        "True whenever an LLM or other foundation model is used; false for a classical model "
-        "(regression, boosting, forecasting) when no LLM is mentioned."
+        "True whenever an LLM or other foundation model is used (GPT, Claude, Gemini, Llama, "
+        "Mistral, Qwen); false for a classical model (regression, boosting, forecasting) and "
+        "for a single-task model such as speech-to-text (Whisper), OCR or a translation engine."
     ),
     "ai_system.model_source": (
         "third_party_api = a hosted provider API (OpenAI, Anthropic, Azure, Bedrock, Gemini, a "
@@ -53,16 +54,21 @@ FIELD_HINTS: dict[str, str] = {
         "in_house = a model your own team trained from scratch."
     ),
     "ai_system.autonomy_level": (
-        "Always record it when the text says who acts on the output. assistive = drafts or "
-        "informs, a person does the work; recommends = suggests, scores or ranks, a person "
-        "decides each case; decides = acts or decides without a person reviewing that case "
-        "(automatic blocking, approval, gate opening), even if someone can override afterwards."
+        "Always record it when the text says who acts on the output. assistive = produces "
+        "material a person uses, edits or publishes (drafts, summaries, transcripts, captions, "
+        "translations, generated audio, a suggested default the user can change); nothing is "
+        "decided. recommends = proposes a decision, score, ranking or flag about a case that a "
+        "person accepts or rejects; decides = acts or decides without a person reviewing that "
+        "case (automatic blocking, payment, approval, gate opening, placing orders), even if "
+        "someone can override afterwards."
     ),
     "ai_system.human_oversight": "True when a person reviews or can override outputs.",
     "project.target_users": (
-        "Who operates or uses the system, not who it is about. internal = staff only; "
-        "external = customers, clients or partners who log in or are known; public = anyone, "
-        "including visitors and applicants without an account."
+        "Who operates or uses the system, not who it is about. internal = your own staff only "
+        "(underwriters, analysts, your legal team); external = customers, clients or partners "
+        "who log in or are known, including staff of a client or partner organisation (teachers "
+        "at partner schools, caseworkers at a client authority); public = anyone, "
+        "including visitors, applicants and consumers who can simply sign up for an account."
     ),
     "project.lifecycle_stage": "pilot and production are stated; otherwise leave it out.",
     "data.processes_personal_data": (
@@ -71,9 +77,14 @@ FIELD_HINTS: dict[str, str] = {
     ),
     "data.special_category_data": (
         "Always record it when personal data is processed. List every category the data "
-        "contains: health records, symptoms, radiology or patient data = health; faces, voices, "
-        "fingerprints or facial expressions = biometric; also ethnicity, political, religious, "
-        "sexual_orientation, criminal. Record [] when an ordinary business tool clearly has none."
+        "contains: health records, symptoms, radiology or patient data = health; face, voice or "
+        "fingerprint data used to identify, verify or analyse a person (face match, voice login, "
+        "facial-expression analysis) = biometric; also ethnicity, political, religious, "
+        "sexual_orientation, criminal (investigation and conviction data). A recording that is "
+        "only transcribed, captioned or used as a sample for speech synthesis is not biometric; "
+        "a toy, shop or fitness tool has no health data unless health data is named, and mood or "
+        "sentiment inferred from survey text or messages is not health data. Record [] "
+        "when an ordinary business tool clearly has none."
     ),
     "data.biometric_identification": (
         "True only when biometric data (face, fingerprint, voice) is used to identify or verify "
@@ -89,39 +100,55 @@ FIELD_HINTS: dict[str, str] = {
     "use_case.domains": (
         "Record a regulated domain only when the system's output makes or supports that kind "
         "of decision about a person; the company's industry does not matter. hr_employment = "
-        "recruiting, evaluating, promoting, assigning or monitoring workers (an expense tool "
-        "using HR tables is other); credit_insurance = creditworthiness, credit scoring, loan "
-        "or insurance decisions (a bank's support chatbot or balance assistant is other); "
+        "recruiting, evaluating, promoting, assigning shifts or tasks to, or monitoring workers "
+        "(an expense tool using HR tables or a bot answering staff questions about HR policy is "
+        "other); credit_insurance = creditworthiness, credit scoring, loan decisions, and the "
+        "pricing or risk assessment of life or health insurance (fraud detection, motor or "
+        "property claims handling, payments and a bank's support chatbot are other); "
         "essential_services = eligibility for public benefits, housing, utilities (a council FAQ "
         "bot or a shop's refunds are other); critical_infrastructure = safety components that "
-        "operate energy, water or transport systems (building turnstiles and login pages are "
-        "other); medical_or_safety_component = diagnosis, triage or a safety function. When in "
-        "doubt, record ['other']."
+        "operate energy, water or transport networks (a company's own IT security, network "
+        "monitoring, SOC tooling, building turnstiles and login pages are other); "
+        "medical_or_safety_component = diagnosis, triage, a medical device or a safety function. "
+        "A fraud, payments or claims model is other even at a bank or insurer. When in doubt, "
+        "record ['other']."
     ),
     "use_case.affects_legal_or_significant_effects": (
-        "True when outputs influence hiring, credit, insurance, access to benefits, education, "
-        "legal status or similar decisions about a person, even with a human in the loop. "
-        "Answering questions, small customer-service outcomes (refunds, order status), building "
-        "access for staff and drafting content are not significant effects."
+        "True when outputs influence hiring, shifts or pay, credit, insurance pricing or claim "
+        "payouts, access to benefits, grades, visas, legal status or similar decisions about a "
+        "person, even with a human in the loop. Answering questions, small customer-service "
+        "outcomes (refunds, order status), building access for staff, drafting content, "
+        "blocking a network address, flagging a transaction or routing work to a reviewer are "
+        "not significant effects."
     ),
     "use_case.interacts_directly_with_people": (
         "True when people converse with the system itself (chat, voice, assistant). A form, an "
-        "upload or an internal report is not direct interaction."
+        "upload, an app in which the output appears (a roster, an offer, a score) or an internal "
+        "report is not direct interaction."
     ),
     "use_case.generates_synthetic_content": (
         "True when it produces text, images, audio or video shown to people: summaries of logs "
-        "or claims, drafted messages, answers, explanations, posts. A score, a ranking, a flag "
-        "or a yes/no suggestion alone is not content."
+        "or claims, drafted messages, answers, explanations, posts, voice-overs, and the "
+        "comments or replies an agent writes after acting; a tool that summarises log lines "
+        "or search results generates content. A score, a ranking, a flag, a verbatim "
+        "transcript of speech or a yes/no suggestion alone is not content."
     ),
     "use_case.emotion_recognition": (
         "True only when the system infers emotions, mood, attention or intentions of people."
     ),
     "use_case.social_scoring": (
-        "Only true for scoring people's trustworthiness or social behaviour across unrelated "
-        "contexts leading to detrimental treatment (EU AI Act Art. 5(1)(c)). A job-fit, credit "
-        "or quality score for one stated purpose is NOT social scoring: record false."
+        "True for a trustworthiness or behaviour score built from data gathered in unrelated "
+        "contexts (social-media activity, payment history, complaints, lifestyle) that leads "
+        "to worse treatment somewhere else (renting, services, prices), even when used for one "
+        "purpose (EU AI Act Art. 5(1)(c)). A job-fit, credit or quality score built only from "
+        "data relevant to that decision is NOT social scoring: record false."
     ),
     "use_case.manipulative_or_subliminal": "True only for deliberate deception or subliminal cues.",
+    "use_case.untargeted_facial_scraping": (
+        "True only when facial images are collected indiscriminately from the internet or CCTV "
+        "to build or grow a face database. Matching faces against an existing watch list or "
+        "verifying a known person is not scraping: record false."
+    ),
     "controls.in_place": (
         "Include a control only when the text explicitly says it is in place today; being an "
         "internal tool or having a known user group is NOT a control. guardrails = prompt-"
@@ -166,10 +193,13 @@ def _value_schema(spec: QuestionSpec) -> dict[str, Any]:
     return {"type": "string", "maxLength": 500}
 
 
-def extraction_tool_schema() -> dict[str, Any]:
-    """OpenAI-style tool definition with one property per askable field."""
+def extraction_tool_schema(only: frozenset[str] | None = None) -> dict[str, Any]:
+    """OpenAI-style tool definition with one property per askable field (or per field in
+    ``only``, for the completion pass)."""
     properties: dict[str, Any] = {}
     for spec in QUESTION_BANK:
+        if only is not None and spec.field not in only:
+            continue
         hint = FIELD_HINTS.get(spec.field)
         properties[spec.field.replace(".", "__")] = {
             "type": "object",
@@ -209,7 +239,12 @@ SYSTEM_PROMPT = (
     f"{EXTRACTION_TOOL_NAME} exactly once with every field the text supports. Always try to "
     "fill these gate fields first, because they decide the classification: "
     + ", ".join(GATE_FIELDS)
-    + ". When a description of an ordinary business tool clearly implies that a sensitive "
+    + ". Then fill every other field the text supports, in particular model_source, "
+    "autonomy_level, human_oversight, target_users, data_subjects, special_category_data, "
+    "biometric_identification, generates_synthetic_content, interacts_directly_with_people "
+    "and controls.in_place; the owner is asked a question for every field you leave out, so "
+    "a named provider, a stated reviewer or a stated login must be recorded, not skipped"
+    ". When a description of an ordinary business tool clearly implies that a sensitive "
     "practice is absent (biometrics, emotion recognition, social scoring, manipulation), "
     "record it as false with confidence 0.85. Controls (guardrails, access control, monitoring, "
     "evaluation, vendor terms, rollback, disclosure) count only when the text says they exist "
@@ -279,6 +314,8 @@ RISK_RAISING_BOOLEANS: frozenset[str] = frozenset(
 )
 DROP_WHEN_UNGROUNDED: frozenset[str] = frozenset({"controls.in_place", "use_case.domains"})
 UNGROUNDED_CONFIDENCE = 0.6
+# A full extraction returns 18 to 30 fields; fewer means the model stopped early.
+ABBREVIATED_FIELD_COUNT = 14
 _SPACES = re.compile(r"\s+")
 
 
@@ -300,21 +337,24 @@ def evidence_in_text(evidence: str | None, text: str) -> bool:
 CONTROL_KEYWORDS: dict[str, tuple[str, ...]] = {
     "guardrails": ("guardrail", "filter", "prompt-injection", "prompt injection", "moderation"),
     "access_controls": (
-        "login",
-        "log in",
-        "logged",
+        "log in with",
+        "logged in",
+        "logged-in",
+        "sign in",
+        "signed in",
         "sso",
         "authenticat",
         "authoris",
         "authoriz",
         "role-based",
+        "roles",
+        "named account",
         "permission",
         "mutual tls",
         "mtls",
         "restricted to",
+        "limited to",
         "access control",
-        "can read",
-        "only the",
     ),
     "pii_minimisation": ("redact", "minimis", "minimiz", "pseudonym", "anonymi", "mask", "strip"),
     "abuse_monitoring": (
@@ -326,7 +366,15 @@ CONTROL_KEYWORDS: dict[str, tuple[str, ...]] = {
         "misuse",
         "quota",
     ),
-    "pre_release_evaluation": ("evaluat", "red team", "red-team", "tested", "benchmark", "eval"),
+    "pre_release_evaluation": (
+        "evaluat",
+        "red team",
+        "red-team",
+        "tested",
+        "benchmark",
+        "eval",
+        "validat",
+    ),
     "vendor_data_protections": (
         "train on",
         "training on",
@@ -354,8 +402,194 @@ CONTROL_KEYWORDS: dict[str, tuple[str, ...]] = {
         "ai-generated",
         "notice",
         "says it is",
+        "automated",
+        "label",
     ),
 }
+
+
+# An Annex III domain or a significant effect asserted from a description must name the thing
+# it is about. These words are checked in the evidence quote (already required to be in the
+# text), not in the whole text, so an insurer's chatbot is not credit_insurance just because the
+# text says "insurance" somewhere. Without them the value stays but needs confirmation.
+DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "hr_employment": (
+        "recruit",
+        "hiring",
+        "hire",
+        "candidate",
+        "applicant",
+        "cv",
+        "promot",
+        "terminat",
+        "dismiss",
+        "shift",
+        "roster",
+        "task",
+        "performance",
+        "productivity",
+        "worker",
+        "employee",
+        "staff",
+    ),
+    "credit_insurance": (
+        "creditworth",
+        "credit scor",
+        "credit decision",
+        "credit risk",
+        "loan",
+        "mortgage",
+        "lending",
+        "premium",
+        "underwrit",
+        "insurance pricing",
+        "insurance risk",
+        "life insurance",
+        "health insurance",
+    ),
+    "education": (
+        "student",
+        "pupil",
+        "exam",
+        "grade",
+        "grading",
+        "admission",
+        "proctor",
+        "school",
+        "learner",
+    ),
+    "law_enforcement": (
+        "police",
+        "law enforcement",
+        "officer",
+        "crime",
+        "criminal",
+        "suspect",
+        "offender",
+    ),
+    "migration_border": (
+        "visa",
+        "asylum",
+        "border",
+        "immigration",
+        "migration",
+        "residence permit",
+    ),
+    "justice_democratic": (
+        "court",
+        "judicial",
+        "judge",
+        "tribunal",
+        "election",
+        "referend",
+        "voter",
+    ),
+    "critical_infrastructure": (
+        "grid",
+        "substation",
+        "electricity",
+        "power network",
+        "power plant",
+        "water",
+        "gas",
+        "heating",
+        "rail",
+        "traffic",
+        "road",
+        "pipeline",
+        "critical infrastructure",
+        "safety component",
+    ),
+    "essential_services": (
+        "benefit",
+        "welfare",
+        "social assistance",
+        "housing",
+        "eligib",
+        "utility",
+        "emergency",
+        "public service",
+        "healthcare access",
+    ),
+    "medical_or_safety_component": (
+        "diagnos",
+        "triage",
+        "medical device",
+        "patient",
+        "clinical",
+        "ce-mark",
+        "ce mark",
+        "safety component",
+        "safety function",
+        "symptom",
+        "treatment",
+    ),
+}
+EFFECT_KEYWORDS: tuple[str, ...] = (
+    "hire",
+    "hiring",
+    "recruit",
+    "candidate",
+    "shortlist",
+    "promot",
+    "terminat",
+    "dismiss",
+    "shift",
+    "roster",
+    "pay",
+    "wage",
+    "salary",
+    "credit",
+    "loan",
+    "mortgage",
+    "insurance",
+    "premium",
+    "claim",
+    "settle",
+    "benefit",
+    "welfare",
+    "housing",
+    "eligib",
+    "grade",
+    "exam",
+    "admission",
+    "visa",
+    "asylum",
+    "legal",
+    "court",
+    "sentenc",
+    "diagnos",
+    "treatment",
+    "triage",
+    "patient",
+    "fine",
+    "penalt",
+    "deny",
+    "denied",
+    "refus",
+    "reject",
+    "block",
+    "access to",
+    "contract",
+    "price",
+    "decision about",
+    "decisions about",
+)
+
+
+def vocabulary_supported(path: str, value: object, evidence: str | None) -> bool:
+    """True when the evidence quote names what an Annex III domain or a significant effect is
+    about; a bare label such as "insurance" or "infrastructure" is not enough."""
+    haystack = _normalise_text(evidence or "")
+    if path == "use_case.domains" and isinstance(value, list):
+        return all(
+            str(domain) == "other"
+            or any(word in haystack for word in DOMAIN_KEYWORDS.get(str(domain), ()))
+            for domain in value
+        )
+    if path == "use_case.affects_legal_or_significant_effects" and value is True:
+        return any(word in haystack for word in EFFECT_KEYWORDS)
+    return True
 
 
 def supported_controls(value: object, text: str) -> list[str]:
@@ -384,6 +618,38 @@ def _raises_risk(field: ExtractedField) -> bool:
     return False
 
 
+def reconcile_fields(fields: list[ExtractedField]) -> list[ExtractedField]:
+    """Definitional consistency between fields, applied after grounding.
+
+    Biometric identification is, by definition, processing of biometric special-category data
+    (GDPR Art. 4(14), 9(1)); a model that records the first and omits the second has left a
+    fact out, so it is added at the identification's confidence.
+    """
+    by_path = {field.path: field for field in fields}
+    identification = by_path.get("data.biometric_identification")
+    if identification is None or identification.value is not True:
+        return fields
+    special = by_path.get("data.special_category_data")
+    if special is None:
+        return [
+            *fields,
+            ExtractedField(
+                path="data.special_category_data",
+                value=["biometric"],
+                confidence=identification.confidence,
+                evidence=identification.evidence,
+            ),
+        ]
+    if isinstance(special.value, list) and "biometric" not in special.value:
+        return [
+            field
+            if field.path != "data.special_category_data"
+            else field.model_copy(update={"value": [*special.value, "biometric"]})
+            for field in fields
+        ]
+    return fields
+
+
 def ground_fields(fields: list[ExtractedField], text: str) -> list[ExtractedField]:
     """Keep stated facts as they are; demote or drop risk-raising inferences."""
     grounded: list[ExtractedField] = []
@@ -396,6 +662,10 @@ def ground_fields(fields: list[ExtractedField], text: str) -> list[ExtractedFiel
                 continue
             field = field.model_copy(update={"value": kept})
         if not _raises_risk(field) or evidence_in_text(field.evidence, text):
+            if not vocabulary_supported(field.path, field.value, field.evidence):
+                field = field.model_copy(
+                    update={"confidence": min(field.confidence, UNGROUNDED_CONFIDENCE)}
+                )
             grounded.append(field)
         elif field.path in DROP_WHEN_UNGROUNDED:
             logger.debug("inference.extraction.dropped_ungrounded", extra={"field": field.path})
@@ -405,7 +675,7 @@ def ground_fields(fields: list[ExtractedField], text: str) -> list[ExtractedFiel
                     update={"confidence": min(field.confidence, UNGROUNDED_CONFIDENCE)}
                 )
             )
-    return grounded
+    return reconcile_fields(grounded)
 
 
 async def extract_fields(text: str, *, context: str | None = None) -> list[ExtractedField]:
@@ -422,16 +692,55 @@ async def extract_fields_detailed(text: str, *, context: str | None = None) -> E
         return ExtractionResult(
             fields=heuristic, latency_ms=int((time.perf_counter() - started) * 1000)
         )
+    user_content = text if not context else f"Source: {context}\n\n{text}"
+    started = time.perf_counter()
+    first = await _call_extraction(settings, user_content, only=None)
+    fields = list(first.fields)
+    prompt_tokens = first.prompt_tokens
+    completion_tokens = first.completion_tokens
+    if len(fields) < ABBREVIATED_FIELD_COUNT:
+        # The model sometimes stops after the first group of fields although the text goes on
+        # to name a provider, a reviewer or a login. One completion pass asks for the rest.
+        recorded = {field.path for field in fields}
+        remaining = frozenset(spec.field for spec in QUESTION_BANK) - recorded
+        follow_up = (
+            f"{user_content}\n\nAlready recorded: {', '.join(sorted(recorded)) or 'nothing'}. "
+            "Record the remaining fields the text supports; leave out the others."
+        )
+        second = await _call_extraction(settings, follow_up, only=remaining)
+        fields.extend(field for field in second.fields if field.path not in recorded)
+        prompt_tokens = _add(prompt_tokens, second.prompt_tokens)
+        completion_tokens = _add(completion_tokens, second.completion_tokens)
+        logger.info(
+            "inference.extraction.completion_pass",
+            extra={"first_pass_fields": len(recorded), "added_fields": len(fields) - len(recorded)},
+        )
+    return ExtractionResult(
+        fields=ground_fields(fields, text),
+        latency_ms=int((time.perf_counter() - started) * 1000),
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+    )
+
+
+def _add(left: int | None, right: int | None) -> int | None:
+    if left is None:
+        return right
+    return left if right is None else left + right
+
+
+async def _call_extraction(
+    settings: Settings, user_content: str, *, only: frozenset[str] | None
+) -> ExtractionResult:
     import litellm
 
-    user_content = text if not context else f"Source: {context}\n\n{text}"
     started = time.perf_counter()
     response = await litellm.acompletion(
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_content},
         ],
-        tools=[extraction_tool_schema()],
+        tools=[extraction_tool_schema(only)],
         tool_choice={"type": "function", "function": {"name": EXTRACTION_TOOL_NAME}},
         temperature=0,
         max_tokens=6000,
@@ -462,7 +771,7 @@ async def extract_fields_detailed(text: str, *, context: str | None = None) -> E
         except json.JSONDecodeError:
             logger.warning("inference.extraction.invalid_json")
     return ExtractionResult(
-        fields=ground_fields(fields, text),
+        fields=fields,
         latency_ms=latency_ms,
         prompt_tokens=prompt_tokens if isinstance(prompt_tokens, int) else None,
         completion_tokens=completion_tokens if isinstance(completion_tokens, int) else None,
