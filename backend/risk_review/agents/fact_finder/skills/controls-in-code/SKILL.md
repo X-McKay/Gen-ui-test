@@ -32,7 +32,8 @@ metadata:
 - abuse_monitoring: rate limiters (`slowapi`, `express-rate-limit`, nginx `limit_req`),
   abuse or misuse logging, alerting, quotas.
 - pre_release_evaluation: `evals/`, `eval` jobs in CI, red-team docs, model cards with
-  test results, golden datasets.
+  test results, golden datasets. A CI job that only runs unit tests (`pytest -q`) is
+  not an evaluation of the model's outputs: record nothing from it.
 - vendor_data_protections: documents stating a DPA, zero-data-retention or "not used for
   training" terms with the provider; a config flag that opts out of training.
 - incident_response: feature flags or kill switches around the model call, rollback
