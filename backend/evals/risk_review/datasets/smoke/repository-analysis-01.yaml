@@ -1,7 +1,7 @@
 id: smoke-repository-analysis-01
 lane: repository-analysis
 repository: planted
-tags: [allowlist-bypass, unsafe-deserialise]
+tags: [allowlist-bypass, unsafe-deserialise, missing-cap, token-leak]
 expected_findings:
   - id: REPO-01
     file: backend/app/repo_analysis/clone_repository.py
@@ -13,10 +13,17 @@ expected_findings:
     lines: [35, 39]
     categories: [unsafe-deserialise]
     min_severity: high
-decoys:
-  - id: REPO-D1
+  - id: REPO-03
     file: backend/app/repo_analysis/clone_repository.py
-    lines: [26, 31]
+    lines: [24, 31]
+    categories: [missing-cap]
+    min_severity: low
+  - id: LOG-02
+    file: backend/app/api/intakes.py
+    lines: [47, 51]
+    categories: [token-leak, token-in-error]
+    min_severity: medium
+decoys:
   - id: REPO-D3
     file: backend/app/repo_analysis/clone_repository.py
     lines: [42, 46]

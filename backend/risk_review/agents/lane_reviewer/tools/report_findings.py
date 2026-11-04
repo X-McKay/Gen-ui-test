@@ -2,6 +2,8 @@
 
 The tool validates every finding into the typed contract **and** checks each evidence
 quote against the actual file line, so a hallucinated citation never reaches the report.
+Calls accumulate: a finding with the same file, line and category replaces the earlier
+one, so the reviewer can report as it goes and a budget stop never loses what was found.
 The accepted output is stored in session state under ``OUTPUT_KEY`` for the step to read.
 """
 
@@ -91,10 +93,12 @@ class ReportFindingsTool(BaseTool):
         super().__init__(
             name=TOOL_NAME,
             description=(
-                "Deliver the review result: status, findings (each with file, line, invariant, "
-                "failure scenario, evidence lines and a proposed test), files examined and notes. "
-                "Call it once when the review is complete. Findings whose evidence quotes do not "
-                "match the file are rejected with the reason; fix them and call again."
+                "Deliver findings: status, findings (each with file, line, invariant, failure "
+                "scenario, evidence lines and a proposed test), files examined and notes. Call it "
+                "as soon as you have confirmed a finding and again at the end with the final "
+                "status; findings accumulate across calls (same file, line and category replaces). "
+                "Findings whose evidence quotes do not match the file are rejected with the "
+                "reason; fix them and call again with only the corrected ones."
             ),
         )
         self._service = service
@@ -117,38 +121,45 @@ class ReportFindingsTool(BaseTool):
                 "message": "Arguments did not validate; fix the listed fields and call again.",
                 "errors": _validation_errors(error),
             }
+        previous_raw = tool_context.state.get(OUTPUT_KEY)
+        previous = ReviewOutput.model_validate(previous_raw) if previous_raw else None
+        kept: dict[str, Finding] = {
+            f.finding_id: f for f in (previous.findings if previous else [])
+        }
         rejected: list[dict[str, Any]] = []
-        accepted: list[Finding] = []
+        accepted = 0
         for index, finding in enumerate(parsed.findings):
             problems = [
                 p for p in (check_evidence(self._service, ev) for ev in finding.evidence) if p
             ]
             if problems:
                 rejected.append({"index": index, "title": finding.title, "problems": problems})
-            elif len(accepted) < self._max_findings:
-                accepted.append(finding)
+            elif finding.finding_id in kept or len(kept) < self._max_findings:
+                kept[finding.finding_id] = finding
+                accepted += 1
             else:
                 rejected.append(
                     {"index": index, "title": finding.title, "problems": ["max findings reached"]}
                 )
         lane = str(tool_context.state.get(LANE_KEY) or "unknown")
+        examined = set(parsed.files_examined) | set(previous.files_examined if previous else [])
         output = ReviewOutput(
             status=parsed.status,
             lane=lane,
-            findings=accepted,
-            files_examined=sorted(set(parsed.files_examined))[:200],
-            notes=parsed.notes,
+            findings=list(kept.values()),
+            files_examined=sorted(examined)[:200],
+            notes=parsed.notes or (previous.notes if previous else None),
         )
         tool_context.state[OUTPUT_KEY] = output.model_dump()
         return {
             "ok": True,
-            "accepted": len(accepted),
+            "accepted": accepted,
+            "total_recorded": len(kept),
             "rejected": rejected,
             "message": (
-                "Recorded. If anything was rejected, correct it and call again with ALL findings; "
-                "the last call replaces the previous one."
+                "Recorded. Correct the rejected findings and call again with only those."
                 if rejected
-                else "Recorded. You are done; reply with one sentence."
+                else "Recorded. Continue the review, or reply with one sentence if you are done."
             ),
         }
 

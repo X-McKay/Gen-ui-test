@@ -94,6 +94,33 @@ async def test_report_findings_accepts_grounded_and_rejects_hallucinated(tiny_re
     assert len(stored["findings"]) == 1 and stored["files_examined"] == ["backend/app/api.py"]
 
 
+async def test_report_findings_accumulates_across_calls(tiny_repo: Path) -> None:
+    tool = ReportFindingsTool(RepoService(tiny_repo), max_findings=8)
+    context = _context(**{LANE_KEY: "logging-and-redaction"})
+    await tool.run_async(
+        args={"status": "completed", "findings": [_finding()], "files_examined": ["a.py"]},
+        tool_context=context,
+    )
+    second = await tool.run_async(
+        args={
+            "status": "completed",
+            "findings": [
+                _finding(title="Same place, refined title and scenario text"),
+                _finding(category="redaction-gap", title="A second, distinct finding here"),
+            ],
+            "files_examined": ["b.py"],
+        },
+        tool_context=context,
+    )
+    assert second["accepted"] == 2 and second["total_recorded"] == 2
+    stored = context.state[OUTPUT_KEY]
+    assert [f["title"] for f in stored["findings"]] == [
+        "Same place, refined title and scenario text",
+        "A second, distinct finding here",
+    ]
+    assert stored["files_examined"] == ["a.py", "b.py"]
+
+
 async def test_report_findings_rejects_invalid_schema(tiny_repo: Path) -> None:
     tool = ReportFindingsTool(RepoService(tiny_repo), max_findings=8)
     context = _context()
@@ -110,7 +137,10 @@ async def test_report_findings_enforces_the_cap(tiny_repo: Path) -> None:
     result = await tool.run_async(
         args={
             "status": "completed",
-            "findings": [_finding(), _finding(title="Second finding here")],
+            "findings": [
+                _finding(),
+                _finding(title="Second finding here", category="redaction-gap"),
+            ],
         },
         tool_context=context,
     )

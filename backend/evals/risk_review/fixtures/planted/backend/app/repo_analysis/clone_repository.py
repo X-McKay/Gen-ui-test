@@ -24,10 +24,10 @@ def clone(url: str, token: str | None) -> Path:
         url = url.replace("https://", f"https://x-access-token:{token}@")
     target = Path(tempfile.mkdtemp(prefix="intake-clone-"))
     subprocess.run(
-        ["git", "clone", "--depth", "1", url, str(target)],  # DECOY REPO-D1
+        ["git", "clone", "--depth", "1", url, str(target)],
         check=True,
-        timeout=CLONE_TIMEOUT_S,  # DECOY REPO-D2
-        capture_output=True,
+        timeout=CLONE_TIMEOUT_S,
+        capture_output=True,  # PLANTED REPO-03: no size or file-count cap anywhere in the clone
     )
     return target
 

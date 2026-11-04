@@ -7,7 +7,7 @@ instructions: instructions/system.md
 
 model_settings:
   temperature: 0.1
-  max_tokens: 4000
+  max_tokens: 6000
   enable_thinking: false
 
 retries: 1
@@ -16,7 +16,7 @@ tool_timeout: 20
 metadata:
   contract_version: 1
   owner: platform
-  version: 1.0.0
+  version: 1.1.0
   execution_class: ephemeral
   governance_tier: low
   risk_assessment: docs/risk-assessments/risk-review.yaml
