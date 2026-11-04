@@ -33,11 +33,12 @@ cases:
       data.data_subjects: [employees]
       data.biometric_identification: false
       use_case.emotion_recognition: false
+      use_case.acts_on_the_world: [physical_or_system_actions]
       controls.in_place: [access_controls, incident_response]
     absent: [data.retention_policy]
     inherent: high
-    residual: medium
-    note: Autonomy is the driver; the kill switch and SSO are real controls but do not bring it below medium.
+    residual: high
+    note: Unattended commands on servers are the driver; the kill switch and SSO are real controls but with nobody approving actions the residual stays high.
 
   - id: agent-procurement-orders
     tags: [agentic, ml, internal, decides, financial]
@@ -59,13 +60,15 @@ cases:
       use_case.interacts_directly_with_people: false
       use_case.domains: [other]
       use_case.affects_legal_or_significant_effects: false
+      use_case.acts_on_the_world: [financial_transactions]
+      use_case.financial_exposure: under_10k
       data.processes_personal_data: false
       data.biometric_identification: false
-      controls.in_place: [none]
+      controls.in_place: [hard_limits]
     absent: [data.retention_policy]
     inherent: medium
     residual: medium
-    note: Financial exposure through unattended spending; no personal data, so privacy stays low.
+    note: Unattended spending is the driver; the 5,000-euro cap is a hard limit and the only control; no personal data, so privacy stays low.
 
   # --- Retrieval assistants ----------------------------------------------------------------------
   - id: rag-hr-policy-assistant
@@ -144,6 +147,7 @@ cases:
       use_case.domains: [critical_infrastructure]
       use_case.affects_legal_or_significant_effects: false
       use_case.generates_synthetic_content: false
+      use_case.acts_on_the_world: [physical_or_system_actions]
       data.processes_personal_data: false
       data.biometric_identification: false
     inherent: high
@@ -204,11 +208,14 @@ cases:
       data.data_subjects: [customers]
       data.biometric_identification: false
       data.special_category_data: []
-      controls.in_place: [pre_release_evaluation]
+      data.trains_on_personal_data: true
+      use_case.acts_on_the_world: [financial_transactions]
+      use_case.financial_exposure: under_10k
+      controls.in_place: [pre_release_evaluation, hard_limits]
     absent: [data.retention_policy]
     inherent: high
-    residual: medium
-    note: Trap - claims settlement is neither creditworthiness nor life/health pricing, so credit_insurance would be a false positive; the payout decision is still a significant effect.
+    residual: high
+    note: Trap - claims settlement is neither creditworthiness nor life/health pricing, so credit_insurance would be a false positive; the payout decision is still a significant effect, the model pays claims itself and was trained on claimants' data, so validation and the 2,000-euro cap leave the residual high.
 
   - id: ins-health-premium-pricing
     tags: [ml, external, annex-iii, special-category]
@@ -229,6 +236,7 @@ cases:
       ai_system.human_oversight: true
       use_case.domains: [credit_insurance]
       use_case.affects_legal_or_significant_effects: true
+      use_case.acts_on_the_world: [none]
       data.processes_personal_data: true
       data.special_category_data: [health]
       data.data_subjects: [customers]
@@ -424,6 +432,7 @@ cases:
       use_case.interacts_directly_with_people: false
       use_case.domains: [other]
       use_case.affects_legal_or_significant_effects: false
+      use_case.acts_on_the_world: [none]
       data.processes_personal_data: true
       data.data_subjects: [customers]
       data.trains_on_personal_data: true
@@ -479,12 +488,14 @@ cases:
       use_case.generates_synthetic_content: false
       use_case.domains: [other]
       use_case.affects_legal_or_significant_effects: false
+      use_case.acts_on_the_world: [physical_or_system_actions]
       data.processes_personal_data: true
       data.data_subjects: [employees]
       data.biometric_identification: false
       controls.in_place: [access_controls]
     inherent: medium
-    residual: low
+    residual: medium
+    note: Blocking addresses on the network is a system action the model takes itself; SOC analysts can lift any block, which brings it to the top of medium, not low.
 
   # --- Healthcare ----------------------------------------------------------------------------
   - id: health-ct-nodule-flagging
@@ -537,10 +548,10 @@ cases:
     tags: [ml, internal, decides, financial, no-pii]
     description: >
       Our market-making desk runs a reinforcement-learning strategy that places and cancels
-      orders on European equity venues within pre-set position and loss limits. Trades are
-      executed automatically in milliseconds; the risk desk watches the book and has a kill
-      switch that flattens positions. Inputs are market data only; there is no personal data
-      and no language model.
+      orders on European equity venues within pre-set position limits of up to 5 million euros
+      per name and a daily loss limit. Trades are executed automatically in milliseconds; the
+      risk desk watches the book and has a kill switch that flattens positions. Inputs are
+      market data only; there is no personal data and no language model.
     expected:
       ai_system.uses_ai: true
       ai_system.gpai_model_used: false
@@ -550,14 +561,43 @@ cases:
       ai_system.human_oversight: true
       use_case.generates_synthetic_content: false
       use_case.interacts_directly_with_people: false
-      use_case.domains: [other]
+      use_case.domains: [financial_markets]
       use_case.affects_legal_or_significant_effects: false
+      use_case.acts_on_the_world: [financial_transactions]
+      use_case.financial_exposure: over_1m
       data.processes_personal_data: false
       data.biometric_identification: false
-      controls.in_place: [incident_response]
+      controls.in_place: [incident_response, hard_limits]
+    inherent: high
+    residual: medium
+    note: Algorithmic trading - unattended orders in financial markets with over a million at stake is high inherent risk on the financial and operational lenses with no personal data at all; MiFID II Art. 17 obligations apply and floor the overall tier at high; the kill switch and position limits bring the residual to medium.
+
+  - id: fin-trade-signal-recommender
+    tags: [ml, internal, recommends, financial, trap-trading]
+    description: >
+      A research tool for our equity traders. A gradient-boosting model trained on market data
+      ranks stocks each morning by expected five-day return and shows the list in the traders'
+      dashboard. Traders decide what to buy and place every order themselves through the
+      normal order-management system; the tool has no connection to any venue. Internal use
+      only, no personal data.
+    expected:
+      ai_system.uses_ai: true
+      ai_system.gpai_model_used: false
+      ai_system.model_source: in_house
+      project.target_users: internal
+      ai_system.autonomy_level: recommends
+      ai_system.human_oversight: true
+      use_case.generates_synthetic_content: false
+      use_case.interacts_directly_with_people: false
+      use_case.domains: [financial_markets]
+      use_case.affects_legal_or_significant_effects: false
+      use_case.acts_on_the_world: [none]
+      data.processes_personal_data: false
+      data.biometric_identification: false
+    absent: [use_case.financial_exposure]
     inherent: low
     residual: low
-    note: The tables see no personal data and no Annex III area; financial materiality is not a recorded fact (known gap).
+    note: Trap - a signal a trader executes is not algorithmic trading; financial_transactions or a financial exposure here would be a false positive, and MiFID II Art. 17 does not apply.
 
   # --- Public services ---------------------------------------------------------------------
   - id: pub-benefits-prechecker
@@ -685,6 +725,7 @@ cases:
       ai_system.human_oversight: true
       use_case.domains: [hr_employment]
       use_case.affects_legal_or_significant_effects: true
+      use_case.acts_on_the_world: [none]
       use_case.generates_synthetic_content: false
       use_case.interacts_directly_with_people: false
       data.processes_personal_data: true

@@ -26,11 +26,13 @@ from app.intake.schema import (
     DataSubject,
     Domain,
     EuAiActClassification,
+    FinancialExposure,
     IntakeRecord,
     ModelSource,
     RiskTier,
     SpecialCategory,
     TargetUsers,
+    WorldAction,
     new_record,
 )
 
@@ -57,6 +59,7 @@ EXTERNAL_CHATBOT: dict[str, object] = {
 }
 
 ALL_CONTROLS = [kind for kind in ControlKind if kind is not ControlKind.NONE]
+ALL_CONTROLS_BUT_LIMITS = [kind for kind in ALL_CONTROLS if kind is not ControlKind.HARD_LIMITS]
 CONTROLS_ALL_ON: dict[str, object] = {
     "ai_system.human_oversight": True,
     "controls.in_place": ALL_CONTROLS,
@@ -150,6 +153,31 @@ def test_unknown_answers_add_nothing() -> None:
         ),
         ({"use_case.domains": [Domain.HR_EMPLOYMENT]}, "use_case.domains", 2),
         ({"use_case.emotion_recognition": True}, "use_case.emotion_recognition", 2),
+        (
+            {"use_case.acts_on_the_world": [WorldAction.FINANCIAL_TRANSACTIONS]},
+            "use_case.acts_on_the_world",
+            2,
+        ),
+        (
+            {"use_case.acts_on_the_world": [WorldAction.PHYSICAL_OR_SYSTEM_ACTIONS]},
+            "use_case.acts_on_the_world",
+            2,
+        ),
+        (
+            {"use_case.acts_on_the_world": [WorldAction.LEGAL_COMMITMENTS]},
+            "use_case.acts_on_the_world",
+            2,
+        ),
+        (
+            {"use_case.financial_exposure": FinancialExposure.OVER_1M},
+            "use_case.financial_exposure",
+            5,
+        ),
+        (
+            {"use_case.financial_exposure": FinancialExposure.TEN_K_TO_1M},
+            "use_case.financial_exposure",
+            2,
+        ),
     ],
 )
 def test_each_driver_scores_once(values: dict[str, object], field: str, points: int) -> None:
@@ -171,6 +199,12 @@ def test_each_driver_scores_once(values: dict[str, object], field: str, points: 
             {"use_case.affects_legal_or_significant_effects": False},
             "use_case.affects_legal_or_significant_effects",
         ),
+        ({"use_case.acts_on_the_world": [WorldAction.NONE]}, "use_case.acts_on_the_world"),
+        ({"use_case.domains": [Domain.FINANCIAL_MARKETS]}, "use_case.domains"),
+        (
+            {"use_case.financial_exposure": FinancialExposure.UNDER_10K},
+            "use_case.financial_exposure",
+        ),
     ],
 )
 def test_safe_answers_add_nothing(values: dict[str, object], field: str) -> None:
@@ -190,6 +224,86 @@ def test_inherent_floor_follows_the_classification(
 ) -> None:
     profile = inherent(new_record("floor"), classification)
     assert profile.tier is floor and profile.floor is floor and profile.floor_reason
+
+
+def test_one_action_row_counts_however_many_actions_are_listed() -> None:
+    record = make_record(
+        {
+            "use_case.acts_on_the_world": [
+                WorldAction.PHYSICAL_OR_SYSTEM_ACTIONS,
+                WorldAction.FINANCIAL_TRANSACTIONS,
+            ]
+        }
+    )
+    profile = inherent(record, EuAiActClassification.MINIMAL)
+    assert [(d.field, d.points, d.text) for d in profile.drivers] == [
+        ("use_case.acts_on_the_world", 2, "It executes financial transactions itself")
+    ]
+
+
+ALGORITHMIC_TRADING: dict[str, object] = {
+    "ai_system.uses_ai": True,
+    "project.target_users": TargetUsers.INTERNAL,
+    "ai_system.autonomy_level": AutonomyLevel.DECIDES,
+    "ai_system.human_oversight": True,
+    "use_case.domains": [Domain.FINANCIAL_MARKETS],
+    "use_case.acts_on_the_world": [WorldAction.FINANCIAL_TRANSACTIONS],
+    "use_case.financial_exposure": FinancialExposure.OVER_1M,
+    "data.processes_personal_data": False,
+}
+
+
+def test_algorithmic_trading_is_high_inherent_and_medium_with_limits_confirmed() -> None:
+    assessment = classify(make_record(ALGORITHMIC_TRADING))
+    assert assessment.inherent_risk.tier is RiskTier.HIGH
+    assert assessment.inherent_risk.score == 10
+    # Oversight removes the autonomy points and one impact point; the exposure stays.
+    assert assessment.residual_risk.tier is RiskTier.MEDIUM
+    assert assessment.residual_risk.score == 7
+    financial = next(lens for lens in assessment.risk_lenses if lens.lens == "financial")
+    privacy = next(lens for lens in assessment.risk_lenses if lens.lens == "data_privacy")
+    assert financial.inherent.tier is RiskTier.HIGH and privacy.inherent.tier is RiskTier.LOW
+    assert assessment.overall_risk_tier is RiskTier.HIGH  # the MiFID II floor
+    controlled = make_record(
+        {
+            **ALGORITHMIC_TRADING,
+            CONTROLS_IN_PLACE: [ControlKind.INCIDENT_RESPONSE, ControlKind.HARD_LIMITS],
+        }
+    )
+    assessment = classify(controlled)
+    assert assessment.residual_risk.tier is RiskTier.MEDIUM
+    assert assessment.residual_risk.score == 4
+    limits = next(c for c in assessment.residual_risk.controls if c.control == "hard_limits")
+    assert limits.status == "applied" and limits.points == 2
+    assert assessment.overall_risk_tier is RiskTier.HIGH
+
+
+def test_only_a_hard_limit_lowers_the_magnitude() -> None:
+    record = make_record(
+        {
+            "use_case.financial_exposure": FinancialExposure.OVER_1M,
+            "ai_system.human_oversight": True,
+            CONTROLS_IN_PLACE: ALL_CONTROLS_BUT_LIMITS,
+        }
+    )
+    profile = residual(
+        record, EuAiActClassification.MINIMAL, inherent(record, EuAiActClassification.MINIMAL)
+    )
+    assert profile.score == 5 and profile.tier is RiskTier.MEDIUM
+
+
+def test_signal_recommender_is_not_algorithmic_trading() -> None:
+    record = make_record(
+        {
+            **ALGORITHMIC_TRADING,
+            "ai_system.autonomy_level": AutonomyLevel.RECOMMENDS,
+            "use_case.acts_on_the_world": [WorldAction.NONE],
+            "use_case.financial_exposure": "unknown",
+        }
+    )
+    assessment = classify(record)
+    assert assessment.inherent_risk.tier is RiskTier.LOW
+    assert "MiFID II algorithmic trading" not in assessment.applicable_frameworks
 
 
 # --- Residual: confirmed controls only ---------------------------------------------------

@@ -109,9 +109,11 @@ FIELD_HINTS: dict[str, str] = {
         "bot or a shop's refunds are other); critical_infrastructure = safety components that "
         "operate energy, water or transport networks (a company's own IT security, network "
         "monitoring, SOC tooling, building turnstiles and login pages are other); "
-        "medical_or_safety_component = diagnosis, triage, a medical device or a safety function. "
-        "A fraud, payments or claims model is other even at a bank or insurer. When in doubt, "
-        "record ['other']."
+        "medical_or_safety_component = diagnosis, triage, a medical device or a safety function; "
+        "financial_markets = trading or investing in financial instruments (orders on equity, "
+        "bond, derivative or crypto venues, market making, portfolio execution), which is not an "
+        "Annex III area. A fraud, payments or claims model is other even at a bank or insurer. "
+        "When in doubt, record ['other']."
     ),
     "use_case.affects_legal_or_significant_effects": (
         "True when outputs influence hiring, shifts or pay, credit, insurance pricing or claim "
@@ -149,6 +151,30 @@ FIELD_HINTS: dict[str, str] = {
         "to build or grow a face database. Matching faces against an existing watch list or "
         "verifying a known person is not scraping: record false."
     ),
+    "use_case.acts_on_the_world": (
+        "What the system itself carries out, as opposed to outputs a person acts on. "
+        "financial_transactions = it places trades or orders, pays, refunds, settles or "
+        "transfers money (a market-making strategy placing orders, a bot placing purchase "
+        "orders, automatic claim payouts, refunds it issues itself); physical_or_system_actions "
+        "= it operates equipment or infrastructure or changes IT systems (sheds grid load, "
+        "restarts services, runs playbooks on servers, blocks network addresses); "
+        "legal_commitments = it signs, files or binds the organisation. A decision about a "
+        "request is NOT an action: approving or declining a loan, blocking or declining a card "
+        "payment, flagging a transaction, unlocking a door or gate for a verified person, "
+        "assigning shifts, grading, ranking or recommending are all none. Record ['none'] "
+        "when the text makes clear nothing is executed by the system; leave the field out when "
+        "it does not say."
+    ),
+    "use_case.financial_exposure": (
+        "Only when the text states amounts: the largest loss one error or incident could "
+        "plausibly cause, set by the cap on a single action or position. under_10k when every "
+        "action is capped below ten thousand (refunds up to 200 euros, orders under 5,000 "
+        "euros, claims under 2,000 euros paid automatically); ten_k_to_1m for caps or positions "
+        "from ten thousand up to one million; over_1m whenever any limit, position or exposure "
+        "reaches a million or more ('position limits of up to 5 million euros per name' is "
+        "over_1m, not ten_k_to_1m) or market exposure is uncapped. Leave it out when no amount "
+        "is stated."
+    ),
     "controls.in_place": (
         "Include a control only when the text explicitly says it is in place today; being an "
         "internal tool or having a known user group is NOT a control. guardrails = prompt-"
@@ -158,9 +184,13 @@ FIELD_HINTS: dict[str, str] = {
         "pii_minimisation = redaction or minimisation before the model; abuse_monitoring = rate "
         "limits, misuse monitoring; pre_release_evaluation = evaluation, red-teaming or ongoing "
         "checks of the model; vendor_data_protections = provider may not train on the data; "
-        "incident_response = kill switch, rollback; user_disclosure = people are told it is AI. "
-        "A plan, intention, roadmap item or recommendation is not a control. Use 'none' only "
-        "when the text says there are no controls; otherwise leave the field out."
+        "incident_response = kill switch, rollback; user_disclosure = people are told it is AI; "
+        "hard_limits = a position, loss, spend, order-size or action cap the system cannot "
+        "exceed, including an automatic-handling threshold above which a person takes over "
+        "(orders under 5,000 euros, refunds up to 200 euros, claims under 2,000 euros paid "
+        "automatically and the rest routed to a handler, pre-set position and loss limits). "
+        "A plan, intention, roadmap item or recommendation is not a control. Use "
+        "'none' only when the text says there are no controls; otherwise leave the field out."
     ),
 }
 
@@ -312,7 +342,14 @@ RISK_RAISING_BOOLEANS: frozenset[str] = frozenset(
         "use_case.untargeted_facial_scraping",
     }
 )
-DROP_WHEN_UNGROUNDED: frozenset[str] = frozenset({"controls.in_place", "use_case.domains"})
+DROP_WHEN_UNGROUNDED: frozenset[str] = frozenset(
+    {
+        "controls.in_place",
+        "use_case.domains",
+        "use_case.acts_on_the_world",
+        "use_case.financial_exposure",
+    }
+)
 UNGROUNDED_CONFIDENCE = 0.6
 # A full extraction returns 18 to 30 fields; fewer means the model stopped early.
 ABBREVIATED_FIELD_COUNT = 14
@@ -391,6 +428,38 @@ CONTROL_KEYWORDS: dict[str, tuple[str, ...]] = {
         "incident",
         "runbook",
         "feature flag",
+    ),
+    "hard_limits": (
+        "position limit",
+        "loss limit",
+        "spending limit",
+        "spend limit",
+        "order limit",
+        "size limit",
+        "hard limit",
+        "limits",
+        "hard cap",
+        "capped",
+        "cap of",
+        "a cap on",
+        "ceiling",
+        "maximum",
+        "max ",
+        "per order",
+        "per-order",
+        "per trade",
+        "per-trade",
+        "circuit breaker",
+        "price collar",
+        "euro",
+        "dollar",
+        "pound",
+        "€",
+        "$",
+        "£",
+        " eur",
+        " usd",
+        " gbp",
     ),
     "user_disclosure": (
         "disclos",
@@ -511,6 +580,29 @@ DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
         "public service",
         "healthcare access",
     ),
+    "financial_markets": (
+        "trading",
+        "trades",
+        "trader",
+        "market-making",
+        "market making",
+        "equit",
+        "securities",
+        "financial instrument",
+        "portfolio",
+        "investment",
+        "investor",
+        "broker",
+        "hedg",
+        "derivative",
+        "futures",
+        "forex",
+        "fx ",
+        "crypto",
+        "venue",
+        "exchange",
+        "order book",
+    ),
     "medical_or_safety_component": (
         "diagnos",
         "triage",
@@ -525,6 +617,80 @@ DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
         "treatment",
     ),
 }
+# Words that show the system itself carries out an action of each kind; a bare "automatic"
+# or "decides" is not enough to record money movement or control of equipment.
+ACTION_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "financial_transactions": (
+        "trade",
+        "trading",
+        "order",
+        "pay",
+        "paid",
+        "refund",
+        "settle",
+        "transfer",
+        "disburse",
+        "wire",
+        "charge",
+        "buy",
+        "sell",
+        "purchase",
+        "invoice",
+        "execut",
+        "position",
+    ),
+    "physical_or_system_actions": (
+        "command",
+        "restart",
+        "reboot",
+        "reset",
+        "run",
+        "execut",
+        "shed",
+        "switch",
+        "actuat",
+        "valve",
+        "block",
+        "quarantin",
+        "isolat",
+        "deploy",
+        "patch",
+        "control",
+        "steer",
+        "dispatch",
+        "playbook",
+        "script",
+        "remediat",
+        "shut",
+    ),
+    "legal_commitments": (
+        "sign",
+        "contract",
+        "bind",
+        "commit",
+        "file",
+        "submit",
+        "agree",
+        "accept the terms",
+        "on behalf",
+    ),
+}
+EXPOSURE_KEYWORDS: tuple[str, ...] = (
+    "million",
+    "thousand",
+    "billion",
+    "€",
+    "$",
+    "£",
+    "eur",
+    "usd",
+    "gbp",
+    "chf",
+    "limit",
+    "notional",
+    "uncapped",
+    "no cap",
+)
 EFFECT_KEYWORDS: tuple[str, ...] = (
     "hire",
     "hiring",
@@ -578,8 +744,9 @@ EFFECT_KEYWORDS: tuple[str, ...] = (
 
 
 def vocabulary_supported(path: str, value: object, evidence: str | None) -> bool:
-    """True when the evidence quote names what an Annex III domain or a significant effect is
-    about; a bare label such as "insurance" or "infrastructure" is not enough."""
+    """True when the evidence quote names what an Annex III domain, a significant effect, an
+    action on the world or a financial exposure is about; a bare label such as "insurance" or
+    "infrastructure", or "automatic" without the action, is not enough."""
     haystack = _normalise_text(evidence or "")
     if path == "use_case.domains" and isinstance(value, list):
         return all(
@@ -589,6 +756,16 @@ def vocabulary_supported(path: str, value: object, evidence: str | None) -> bool
         )
     if path == "use_case.affects_legal_or_significant_effects" and value is True:
         return any(word in haystack for word in EFFECT_KEYWORDS)
+    if path == "use_case.acts_on_the_world" and isinstance(value, list):
+        return all(
+            str(action) == "none"
+            or any(word in haystack for word in ACTION_KEYWORDS.get(str(action), ()))
+            for action in value
+        )
+    if path == "use_case.financial_exposure" and value in {"ten_k_to_1m", "over_1m"}:
+        return any(ch.isdigit() for ch in haystack) or any(
+            word in haystack for word in EXPOSURE_KEYWORDS
+        )
     return True
 
 
@@ -615,6 +792,10 @@ def _raises_risk(field: ExtractedField) -> bool:
         return any(str(v) != "none" for v in field.value)
     if field.path == "data.special_category_data":
         return isinstance(field.value, list) and bool(field.value)
+    if field.path == "use_case.acts_on_the_world" and isinstance(field.value, list):
+        return any(str(v) != "none" for v in field.value)
+    if field.path == "use_case.financial_exposure":
+        return field.value in {"ten_k_to_1m", "over_1m"}
     return False
 
 

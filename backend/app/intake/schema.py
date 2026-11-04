@@ -111,7 +111,26 @@ class Domain(StrEnum):
     CRITICAL_INFRASTRUCTURE = "critical_infrastructure"
     MEDICAL_OR_SAFETY_COMPONENT = "medical_or_safety_component"
     ESSENTIAL_SERVICES = "essential_services"
+    # Not Annex III: trading in financial instruments (MiFID II algorithmic trading rules).
+    FINANCIAL_MARKETS = "financial_markets"
     OTHER = "other"
+
+
+class WorldAction(StrEnum):
+    """Actions the system carries out itself, as opposed to outputs a person acts on."""
+
+    FINANCIAL_TRANSACTIONS = "financial_transactions"
+    PHYSICAL_OR_SYSTEM_ACTIONS = "physical_or_system_actions"
+    LEGAL_COMMITMENTS = "legal_commitments"
+    NONE = "none"
+
+
+class FinancialExposure(StrEnum):
+    """The largest loss one error or incident could plausibly cause."""
+
+    UNDER_10K = "under_10k"
+    TEN_K_TO_1M = "ten_k_to_1m"
+    OVER_1M = "over_1m"
 
 
 class ControlKind(StrEnum):
@@ -125,6 +144,7 @@ class ControlKind(StrEnum):
     VENDOR_DATA_PROTECTIONS = "vendor_data_protections"
     INCIDENT_RESPONSE = "incident_response"
     USER_DISCLOSURE = "user_disclosure"
+    HARD_LIMITS = "hard_limits"
     NONE = "none"
 
 
@@ -220,6 +240,14 @@ class UseCase(BaseModel):
     # Not in the original question list; needed for Art. 5(1)(a) and 5(1)(e).
     manipulative_or_subliminal: FieldMeta[bool] = Field(default_factory=FieldMeta[bool])
     untargeted_facial_scraping: FieldMeta[bool] = Field(default_factory=FieldMeta[bool])
+    # What the system does to the world by itself (money, equipment, commitments) and how much
+    # one incident could cost: the financial and operational materiality the lenses need.
+    acts_on_the_world: FieldMeta[list[WorldAction]] = Field(
+        default_factory=FieldMeta[list[WorldAction]]
+    )
+    financial_exposure: FieldMeta[FinancialExposure] = Field(
+        default_factory=FieldMeta[FinancialExposure]
+    )
 
 
 class Controls(BaseModel):
@@ -271,7 +299,7 @@ class RiskDriver(BaseModel):
 
     field: str
     value: object
-    category: str = Field(description="exposure, autonomy, data or impact")
+    category: str = Field(description="exposure, autonomy, data, impact or magnitude")
     points: int = Field(ge=0)
     text: str
     lenses: list[str] = Field(

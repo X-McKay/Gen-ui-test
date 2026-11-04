@@ -83,10 +83,12 @@ cases:
       data.cross_border_transfer: false
       use_case.social_scoring: false
       use_case.emotion_recognition: false
-      controls.in_place: [access_controls, pre_release_evaluation, user_disclosure, pii_minimisation]
+      use_case.acts_on_the_world: [financial_transactions]
+      use_case.financial_exposure: under_10k
+      controls.in_place: [access_controls, pre_release_evaluation, user_disclosure, pii_minimisation, hard_limits]
     inherent: high
-    residual: low
-    note: README states automatic settlement under EUR 2,000, handler reopen, OAuth2 and the handler role; data_protection.md states customers are told an automated estimate may settle the claim; model_card.md states claimant names were dropped before training (minimisation); model_card.md states LightGBM trained in-house on claims with postcode and the pre-launch validation; data_protection.md lists name, address, IBAN, registration, EEA only. Motor claims are not Annex III credit_insurance.
+    residual: medium
+    note: README states automatic settlement under EUR 2,000 (payouts the system makes itself, capped, which is a hard limit), handler reopen, OAuth2 and the handler role; data_protection.md states customers are told an automated estimate may settle the claim; model_card.md states claimant names were dropped before training (minimisation); model_card.md states LightGBM trained in-house on claims with postcode and the pre-launch validation; data_protection.md lists name, address, IBAN, registration, EEA only. Motor claims are not Annex III credit_insurance.
 
   - id: repo-ops-agent
     tags: [repository, agentic, genai, internal, decides, plan-trap]
@@ -109,8 +111,9 @@ cases:
       data.biometric_identification: false
       use_case.social_scoring: false
       use_case.emotion_recognition: false
+      use_case.acts_on_the_world: [physical_or_system_actions]
       controls.in_place: [access_controls, incident_response, vendor_data_protections]
     absent: [data.special_category_data]
     inherent: high
     residual: medium
-    note: README and loop.py state the agent runs playbooks with no approval step; data_handling.md states commercial API terms with no training on the data; roadmap.md lists approval, redaction and an injection filter as planned (must not count); OIDC console, kill switch with rollback and the audit log are in place.
+    note: README and loop.py state the agent runs playbooks on hosts with no approval step (system actions); data_handling.md states commercial API terms with no training on the data; roadmap.md lists approval, redaction and an injection filter as planned (must not count); OIDC console, kill switch with rollback and the audit log are in place.

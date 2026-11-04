@@ -58,6 +58,33 @@ def test_negative_personal_data_gate_skips_data_details() -> None:
         assert field_status(record, spec_for(field)) is FieldStatus.SKIPPED
 
 
+def test_list_gates_open_on_any_selected_item() -> None:
+    record = new_record("t")
+    acts = spec_for("use_case.acts_on_the_world")
+    exposure = spec_for("use_case.financial_exposure")
+    assert not gate_open(record, acts) and not gate_open(record, exposure)
+    record.set_field(
+        "ai_system.autonomy_level", "assistive", source="user", confidence=1.0, confirmed=True
+    )
+    assert field_status(record, acts) is FieldStatus.SKIPPED
+    record.set_field(
+        "ai_system.autonomy_level", "recommends", source="user", confidence=1.0, confirmed=True
+    )
+    assert field_status(record, acts) is FieldStatus.MISSING
+    record.set_field(
+        "use_case.acts_on_the_world", ["none"], source="user", confidence=1.0, confirmed=True
+    )
+    assert field_status(record, exposure) is FieldStatus.SKIPPED
+    record.set_field(
+        "use_case.acts_on_the_world",
+        ["physical_or_system_actions", "financial_transactions"],
+        source="user",
+        confidence=1.0,
+        confirmed=True,
+    )
+    assert field_status(record, exposure) is FieldStatus.MISSING
+
+
 def test_unknown_gate_closes_dependents() -> None:
     record = new_record("t")
     record.set_field(

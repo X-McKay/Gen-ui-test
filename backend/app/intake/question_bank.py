@@ -17,12 +17,14 @@ from app.intake.schema import (
     ControlKind,
     DataSubject,
     Domain,
+    FinancialExposure,
     IntakeRecord,
     LifecycleStage,
     ModelSource,
     RiskTier,
     SpecialCategory,
     TargetUsers,
+    WorldAction,
 )
 
 Control = Literal["choice", "multi", "yes_no", "text"]
@@ -54,7 +56,8 @@ class Option(BaseModel):
 
 
 class Gate(BaseModel):
-    """A question is asked only when ``field`` holds one of ``values``."""
+    """A question is asked only when ``field`` holds one of ``values`` (for a multi-select
+    field: when any selected item is one of ``values``)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -101,6 +104,10 @@ ANNEX_III_DOMAINS: frozenset[Domain] = frozenset(
 
 USES_AI = Gate(field="ai_system.uses_ai", values=[True])
 PERSONAL_DATA = Gate(field="data.processes_personal_data", values=[True])
+ACTS_OR_RECOMMENDS = Gate(
+    field="ai_system.autonomy_level", values=[AutonomyLevel.RECOMMENDS, AutonomyLevel.DECIDES]
+)
+MOVES_MONEY = Gate(field="use_case.acts_on_the_world", values=[WorldAction.FINANCIAL_TRANSACTIONS])
 
 QUESTION_BANK: list[QuestionSpec] = [
     # --- Gates: these choose the classification branch and are asked first ----------------
@@ -139,6 +146,7 @@ QUESTION_BANK: list[QuestionSpec] = [
             (Domain.CRITICAL_INFRASTRUCTURE, "Critical infrastructure"),
             (Domain.MEDICAL_OR_SAFETY_COMPONENT, "Medical or safety component"),
             (Domain.ESSENTIAL_SERVICES, "Essential services"),
+            (Domain.FINANCIAL_MARKETS, "Trading in financial instruments"),
             (Domain.OTHER, "None of these"),
         ),
         is_gate=True,
@@ -568,6 +576,50 @@ QUESTION_BANK: list[QuestionSpec] = [
         why_asked="Untargeted facial scraping is a prohibited practice.",
         priority=47,
     ),
+    # --- What it does to the world: asked once the system recommends or decides -----------
+    QuestionSpec(
+        field="use_case.acts_on_the_world",
+        section=Section.USE_CASE,
+        label="Acts on the world",
+        prompt="Does it carry out actions itself, such as payments, trades, orders or commands?",
+        control="multi",
+        options=[
+            Option(
+                value=WorldAction.FINANCIAL_TRANSACTIONS,
+                label="Financial transactions",
+                description="Places trades or orders, pays, refunds, settles or transfers money",
+            ),
+            Option(
+                value=WorldAction.PHYSICAL_OR_SYSTEM_ACTIONS,
+                label="Physical or system actions",
+                description="Controls equipment or runs commands on systems and networks",
+            ),
+            Option(
+                value=WorldAction.LEGAL_COMMITMENTS,
+                label="Legal commitments",
+                description="Signs, files or binds the organisation to terms",
+            ),
+            Option(value=WorldAction.NONE, label="None of these"),
+        ],
+        gate=ACTS_OR_RECOMMENDS,
+        why_asked="Money, equipment and commitments carry financial and operational risk.",
+        priority=48,
+    ),
+    QuestionSpec(
+        field="use_case.financial_exposure",
+        section=Section.USE_CASE,
+        label="Financial exposure",
+        prompt="What is the largest loss one error or incident could plausibly cause?",
+        control="choice",
+        options=_opts(
+            (FinancialExposure.UNDER_10K, "Under 10 thousand"),
+            (FinancialExposure.TEN_K_TO_1M, "10 thousand to 1 million"),
+            (FinancialExposure.OVER_1M, "Over 1 million"),
+        ),
+        gate=MOVES_MONEY,
+        why_asked="The size of a possible loss sets the financial risk.",
+        priority=49,
+    ),
     # --- Controls: one question, asked only when the inherent risk is medium or above. It
     # must be confirmed because only confirmed controls lower the residual risk -------------
     QuestionSpec(
@@ -616,6 +668,11 @@ QUESTION_BANK: list[QuestionSpec] = [
                 value=ControlKind.USER_DISCLOSURE,
                 label="User disclosure",
                 description="People are told they interact with AI or see AI content",
+            ),
+            Option(
+                value=ControlKind.HARD_LIMITS,
+                label="Hard limits",
+                description="Position, loss, spend or action caps the system cannot exceed",
             ),
             Option(value=ControlKind.NONE, label="None of these yet"),
         ],

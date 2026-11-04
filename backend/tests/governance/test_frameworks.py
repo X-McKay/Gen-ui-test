@@ -14,6 +14,7 @@ from app.governance.frameworks import (
     gdpr,
     internal_policy,
     iso_42001,
+    mifid_algorithmic_trading,
     nist_ai_rmf,
 )
 from app.intake.schema import (
@@ -27,6 +28,7 @@ from app.intake.schema import (
     ModelSource,
     RiskTier,
     SpecialCategory,
+    WorldAction,
 )
 
 RecordFactory = Callable[..., IntakeRecord]
@@ -58,6 +60,7 @@ def test_registry_order_and_names() -> None:
         "GDPR",
         "NIST AI RMF",
         "ISO/IEC 42001",
+        "MiFID II algorithmic trading",
         "Internal AI policy",
     ]
 
@@ -403,3 +406,51 @@ def test_internal_policy_vendor_review(
 ) -> None:
     result = internal_policy.evaluate(make_record({"ai_system.model_source": source}), MINIMAL_EU)
     assert any("vendor review" in text for text in texts(result)) is expected
+
+
+# --- MiFID II algorithmic trading -----------------------------------------------------------
+
+TRADING: dict[str, object] = {
+    "ai_system.uses_ai": True,
+    "use_case.domains": [Domain.FINANCIAL_MARKETS],
+    "ai_system.autonomy_level": AutonomyLevel.DECIDES,
+    "use_case.acts_on_the_world": [WorldAction.FINANCIAL_TRANSACTIONS],
+    "ai_system.human_oversight": True,
+}
+
+
+@pytest.mark.parametrize(
+    "values",
+    [
+        {**TRADING, "use_case.domains": [Domain.OTHER]},
+        {**TRADING, "use_case.domains": "unknown"},
+        {**TRADING, "ai_system.autonomy_level": AutonomyLevel.RECOMMENDS},
+        {**TRADING, "ai_system.autonomy_level": "unknown"},
+    ],
+)
+def test_mifid_does_not_apply_without_automated_orders_in_financial_markets(
+    make_record: RecordFactory, values: dict[str, object]
+) -> None:
+    assert mifid_algorithmic_trading.evaluate(make_record(values), MINIMAL_EU) == NOT_APPLICABLE
+
+
+def test_mifid_obligations_floor_and_dora(make_record: RecordFactory) -> None:
+    result = mifid_algorithmic_trading.evaluate(make_record(TRADING), MINIMAL_EU)
+    assert result.applies and result.tier_floor is RiskTier.HIGH
+    assert result.additional_frameworks == ["DORA"]
+    assert [o.framework for o in result.obligations].count("DORA") == 1
+    assert any("kill functionality" in text for text in texts(result))
+    assert any("pre-trade limits" in text.lower() for text in texts(result))
+    assert any("competent authority" in text for text in texts(result))
+    assert any("annual self-assessment" in text for text in texts(result))
+    assert all(reference for reference in references(result))
+    assert result.next_steps == [
+        "Confirm the pre-trade limits and kill functionality with the risk function before go-live",
+    ]
+
+
+def test_mifid_asks_for_a_monitoring_owner_without_oversight(make_record: RecordFactory) -> None:
+    result = mifid_algorithmic_trading.evaluate(
+        make_record({**TRADING, "ai_system.human_oversight": False}), MINIMAL_EU
+    )
+    assert any("monitors the algorithm" in step for step in result.next_steps)

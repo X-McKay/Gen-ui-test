@@ -104,6 +104,8 @@ FIELD_OWNERS: dict[str, str] = {
             "use_case.affects_legal_or_significant_effects",
             "use_case.emotion_recognition",
             "use_case.social_scoring",
+            "use_case.acts_on_the_world",
+            "use_case.financial_exposure",
             "ai_system.autonomy_level",
             "ai_system.human_oversight",
         ),

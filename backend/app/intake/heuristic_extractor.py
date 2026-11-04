@@ -46,6 +46,39 @@ def extract_heuristically(text: str) -> list[ExtractedField]:
     elif _has(text, r"proof.of.concept", r"\bPoC\b", r"prototype"):
         add("project.lifecycle_stage", "poc", 0.8)
 
+    # What the system does by itself; a recommender or drafting tool acts on nothing.
+    acts = _has(
+        text,
+        r"places? (and cancels )?(purchase )?orders",
+        r"placing (purchase )?orders",
+        r"(executes?|placing|places) trades",
+        r"(issues?|pays?( out)?|makes?) (refunds|payments|payouts)",
+        r"paid (out )?automatically",
+        r"(buys?|sells?) (shares|stock|securities|instruments)",
+    )
+    operates = _has(
+        text,
+        r"runs? (it|commands|playbooks|scripts) on",
+        r"restarts? (a|the) service",
+        r"sheds? load",
+        r"automatically blocks (source )?addresses",
+    )
+    unattended = _has(
+        text, r"automatically", r"without anyone approving", r"nobody approves", r"straight away"
+    )
+    if acts or operates:
+        actions = [
+            kind
+            for kind, present in (
+                ("financial_transactions", acts),
+                ("physical_or_system_actions", operates),
+            )
+            if present
+        ]
+        add("use_case.acts_on_the_world", actions, 0.85, "acts on its own")
+    elif _has(text, r"recommend", r"draft", r"summar", r"suggest", r"score"):
+        add("use_case.acts_on_the_world", ["none"], 0.85)
+
     hr = _has(
         text,
         r"\bCVs?\b",
@@ -100,7 +133,10 @@ def extract_heuristically(text: str) -> list[ExtractedField]:
     else:
         add("use_case.domains", ["other"], 0.9, "no regulated area mentioned")
         add("use_case.affects_legal_or_significant_effects", False, 0.85)
-        add("ai_system.autonomy_level", "assistive", 0.8)
+        if (acts or operates) and unattended:
+            add("ai_system.autonomy_level", "decides", 0.85, "acts automatically")
+        else:
+            add("ai_system.autonomy_level", "assistive", 0.8)
 
     if _has(text, r"\blogs?\b", r"log.search", r"observability", r"incident"):
         add("data.data_sources", ["logs"], 0.85)
@@ -144,6 +180,7 @@ def extract_heuristically(text: str) -> list[ExtractedField]:
         ),
         "incident_response": (r"kill switch", r"rollback", r"incident response"),
         "user_disclosure": (r"disclos", r"labell?ed as AI", r"told they are talking"),
+        "hard_limits": (r"(position|loss|spend(ing)?|order) limits?", r"capped at", r"under \d"),
     }
     in_place = [
         kind for kind, patterns in control_patterns.items() if not planned and _has(text, *patterns)

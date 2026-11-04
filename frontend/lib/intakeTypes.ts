@@ -65,11 +65,28 @@ export type Domain =
   | "critical_infrastructure"
   | "medical_or_safety_component"
   | "essential_services"
+  | "financial_markets"
   | "other";
 export type Confidence9 = number;
 export type Source9 = string;
 export type Confirmed9 = boolean;
-export type Value10 = ControlKind[] | "unknown" | null;
+export type Value10 = WorldAction[] | "unknown" | null;
+/**
+ * Actions the system carries out itself, as opposed to outputs a person acts on.
+ */
+export type WorldAction = "financial_transactions" | "physical_or_system_actions" | "legal_commitments" | "none";
+export type Confidence10 = number;
+export type Source10 = string;
+export type Confirmed10 = boolean;
+export type Value11 = FinancialExposure | "unknown" | null;
+/**
+ * The largest loss one error or incident could plausibly cause.
+ */
+export type FinancialExposure = "under_10k" | "ten_k_to_1m" | "over_1m";
+export type Confidence11 = number;
+export type Source11 = string;
+export type Confirmed11 = boolean;
+export type Value12 = ControlKind[] | "unknown" | null;
 /**
  * Controls the owner can declare. ``NONE`` is an explicit "none of these yet".
  */
@@ -82,10 +99,11 @@ export type ControlKind =
   | "vendor_data_protections"
   | "incident_response"
   | "user_disclosure"
+  | "hard_limits"
   | "none";
-export type Confidence10 = number;
-export type Source10 = string;
-export type Confirmed10 = boolean;
+export type Confidence12 = number;
+export type Source12 = string;
+export type Confirmed12 = boolean;
 export type EuAiActClassification = "prohibited" | "high_risk" | "limited_transparency" | "minimal";
 export type AnnexIiiCategories = string[];
 /**
@@ -114,7 +132,7 @@ export type RiskTier1 = "low" | "medium" | "high" | "critical";
 export type Score = number;
 export type Field1 = string;
 /**
- * exposure, autonomy, data or impact
+ * exposure, autonomy, data, impact or magnitude
  */
 export type Category = string;
 export type Points = number;
@@ -276,12 +294,26 @@ export interface UseCase {
   remote_biometric_id_public_spaces: FieldMetaBool;
   manipulative_or_subliminal: FieldMetaBool;
   untargeted_facial_scraping: FieldMetaBool;
+  acts_on_the_world: FieldMetaListWorldAction;
+  financial_exposure: FieldMetaFinancialExposure;
 }
 export interface FieldMetaListDomain {
   value: Value9;
   confidence: Confidence9;
   source: Source9;
   confirmed: Confirmed9;
+}
+export interface FieldMetaListWorldAction {
+  value: Value10;
+  confidence: Confidence10;
+  source: Source10;
+  confirmed: Confirmed10;
+}
+export interface FieldMetaFinancialExposure {
+  value: Value11;
+  confidence: Confidence11;
+  source: Source11;
+  confirmed: Confirmed11;
 }
 /**
  * Mitigations already in place. Only confirmed controls lower the residual risk.
@@ -290,10 +322,10 @@ export interface Controls {
   in_place: FieldMetaListControlKind;
 }
 export interface FieldMetaListControlKind {
-  value: Value10;
-  confidence: Confidence10;
-  source: Source10;
-  confirmed: Confirmed10;
+  value: Value12;
+  confidence: Confidence12;
+  source: Source12;
+  confirmed: Confirmed12;
 }
 export interface Assessment {
   eu_ai_act: EuAiActAssessment;
@@ -316,7 +348,7 @@ export interface EuAiActAssessment {
  */
 export interface RationaleEntry {
   field: Field;
-  value: Value11;
+  value: Value13;
   article: Article;
   text: Text;
   effect: Effect;
@@ -324,7 +356,7 @@ export interface RationaleEntry {
 /**
  * The value that triggered the rule
  */
-export interface Value11 {
+export interface Value13 {
   [k: string]: unknown;
 }
 /**
@@ -345,13 +377,13 @@ export interface RiskProfile {
  */
 export interface RiskDriver {
   field: Field1;
-  value: Value12;
+  value: Value14;
   category: Category;
   points: Points;
   text: Text1;
   lenses: Lenses;
 }
-export interface Value12 {
+export interface Value14 {
   [k: string]: unknown;
 }
 /**

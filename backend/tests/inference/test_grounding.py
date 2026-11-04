@@ -180,6 +180,53 @@ def test_domains_and_effects_need_their_vocabulary_in_the_evidence() -> None:
     assert grounded["use_case.affects_legal_or_significant_effects"].confidence == 0.9
 
 
+def test_actions_and_exposure_need_their_vocabulary_in_the_evidence() -> None:
+    from app.inference.structured_extraction import vocabulary_supported
+
+    acts = "use_case.acts_on_the_world"
+    exposure = "use_case.financial_exposure"
+    assert vocabulary_supported(acts, ["none"], "ranks stocks each morning")
+    assert vocabulary_supported(acts, ["financial_transactions"], "places and cancels orders")
+    assert not vocabulary_supported(acts, ["financial_transactions"], "decided automatically")
+    assert vocabulary_supported(acts, ["physical_or_system_actions"], "sheds load on feeders")
+    assert not vocabulary_supported(acts, ["physical_or_system_actions"], "nobody approves")
+    assert vocabulary_supported(acts, ["legal_commitments"], "signs on behalf of the firm")
+    assert vocabulary_supported(exposure, "under_10k", "small refunds")
+    assert vocabulary_supported(exposure, "over_1m", "position limits of up to 5 million euros")
+    assert not vocabulary_supported(exposure, "over_1m", "a large book")
+    text = (
+        "A purchasing bot places purchase orders with suppliers as long as the order is under "
+        "5,000 euros. Nobody approves an order first."
+    )
+    fields = [
+        ExtractedField(
+            path=acts,
+            value=["financial_transactions"],
+            confidence=0.95,
+            evidence="places purchase orders with suppliers",
+        ),
+        ExtractedField(
+            path=exposure, value="over_1m", confidence=0.9, evidence="Nobody approves an order"
+        ),
+        ExtractedField(path=exposure, value="under_10k", confidence=0.9, evidence="not in text"),
+        ExtractedField(
+            path="controls.in_place", value=["hard_limits"], confidence=0.9, evidence="under 5,000"
+        ),
+    ]
+    grounded = ground_fields(fields, text)
+    by_path: dict[str, list[ExtractedField]] = {}
+    for field in grounded:
+        by_path.setdefault(field.path, []).append(field)
+    assert by_path[acts][0].confidence == 0.95
+    [capped, kept] = by_path[exposure]
+    assert capped.value == "over_1m" and capped.confidence == UNGROUNDED_CONFIDENCE
+    assert kept.value == "under_10k" and kept.confidence == 0.9  # safe values pass ungrounded
+    assert by_path["controls.in_place"][0].value == ["hard_limits"]
+    assert not ground_fields(
+        [ExtractedField(path=acts, value=["financial_transactions"], confidence=0.9)], text
+    )
+
+
 def test_biometric_identification_implies_biometric_special_category() -> None:
     from app.inference.structured_extraction import reconcile_fields
 

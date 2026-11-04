@@ -54,6 +54,8 @@ const QUESTION_BANK_ORDER = [
   "use_case.remote_biometric_id_public_spaces",
   "use_case.manipulative_or_subliminal",
   "use_case.untargeted_facial_scraping",
+  "use_case.acts_on_the_world",
+  "use_case.financial_exposure",
   "controls.in_place",
 ] as const;
 
@@ -113,6 +115,7 @@ describe("question bank coverage", () => {
       "vendor_data_protections",
       "incident_response",
       "user_disclosure",
+      "hard_limits",
       "none",
     ]);
     expect(optionLabel("controls.in_place", "none")).toBe("None of these yet");

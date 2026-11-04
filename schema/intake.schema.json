@@ -173,6 +173,7 @@
         "vendor_data_protections",
         "incident_response",
         "user_disclosure",
+        "hard_limits",
         "none"
       ],
       "title": "ControlKind",
@@ -258,6 +259,7 @@
         "critical_infrastructure",
         "medical_or_safety_component",
         "essential_services",
+        "financial_markets",
         "other"
       ],
       "title": "Domain",
@@ -342,6 +344,53 @@
         }
       },
       "title": "FieldMeta[AutonomyLevel]",
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
+    },
+    "FieldMeta_FinancialExposure_": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FinancialExposure"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[FinancialExposure]",
       "type": "object",
       "required": [
         "value",
@@ -738,6 +787,56 @@
         "confirmed"
       ]
     },
+    "FieldMeta_list_WorldAction__": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/WorldAction"
+              },
+              "type": "array"
+            },
+            {
+              "const": "unknown",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "confidence": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        },
+        "source": {
+          "default": "inferred",
+          "pattern": "^(user|inferred|repo:.+)$",
+          "title": "Source",
+          "type": "string"
+        },
+        "confirmed": {
+          "default": false,
+          "title": "Confirmed",
+          "type": "boolean"
+        }
+      },
+      "title": "FieldMeta[list[WorldAction]]",
+      "type": "object",
+      "required": [
+        "value",
+        "confidence",
+        "source",
+        "confirmed"
+      ]
+    },
     "FieldMeta_list_str__": {
       "additionalProperties": false,
       "properties": {
@@ -834,6 +933,16 @@
         "source",
         "confirmed"
       ]
+    },
+    "FinancialExposure": {
+      "description": "The largest loss one error or incident could plausibly cause.",
+      "enum": [
+        "under_10k",
+        "ten_k_to_1m",
+        "over_1m"
+      ],
+      "title": "FinancialExposure",
+      "type": "string"
     },
     "IntakeMode": {
       "enum": [
@@ -1120,7 +1229,7 @@
           "title": "Value"
         },
         "category": {
-          "description": "exposure, autonomy, data or impact",
+          "description": "exposure, autonomy, data, impact or magnitude",
           "title": "Category",
           "type": "string"
         },
@@ -1321,6 +1430,12 @@
         },
         "untargeted_facial_scraping": {
           "$ref": "#/$defs/FieldMeta_bool_"
+        },
+        "acts_on_the_world": {
+          "$ref": "#/$defs/FieldMeta_list_WorldAction__"
+        },
+        "financial_exposure": {
+          "$ref": "#/$defs/FieldMeta_FinancialExposure_"
         }
       },
       "title": "UseCase",
@@ -1335,8 +1450,21 @@
         "social_scoring",
         "remote_biometric_id_public_spaces",
         "manipulative_or_subliminal",
-        "untargeted_facial_scraping"
+        "untargeted_facial_scraping",
+        "acts_on_the_world",
+        "financial_exposure"
       ]
+    },
+    "WorldAction": {
+      "description": "Actions the system carries out itself, as opposed to outputs a person acts on.",
+      "enum": [
+        "financial_transactions",
+        "physical_or_system_actions",
+        "legal_commitments",
+        "none"
+      ],
+      "title": "WorldAction",
+      "type": "string"
     }
   },
   "additionalProperties": false,

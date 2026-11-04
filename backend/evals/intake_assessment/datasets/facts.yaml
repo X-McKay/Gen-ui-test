@@ -168,13 +168,15 @@ cases:
       data.processes_personal_data: true
       data.data_subjects: [customers]
       use_case.affects_legal_or_significant_effects: false
+      use_case.acts_on_the_world: [financial_transactions]
+      use_case.financial_exposure: under_10k
       data.biometric_identification: false
       use_case.social_scoring: false
-      controls.in_place: [incident_response, pre_release_evaluation]
+      controls.in_place: [incident_response, pre_release_evaluation, hard_limits]
     absent: [data.retention_policy]
     inherent: high
     residual: high
-    note: Acts on its own with nobody reviewing; a kill switch and a red-team do not change that.
+    note: Issues refunds itself with nobody reviewing; the 200-euro cap, kill switch and red-team are real controls but do not change that.
 
   - id: genai-medical-triage
     tags: [genai, health, annex-iii, special-category]
@@ -223,6 +225,7 @@ cases:
       project.target_users: external
       project.lifecycle_stage: production
       ai_system.autonomy_level: decides
+      use_case.acts_on_the_world: [none]
       use_case.domains: [other]
       use_case.affects_legal_or_significant_effects: true
       data.processes_personal_data: true
@@ -273,6 +276,7 @@ cases:
       ai_system.gpai_model_used: false
       project.target_users: public
       ai_system.autonomy_level: decides
+      use_case.acts_on_the_world: [none]
       ai_system.human_oversight: true
       use_case.domains: [credit_insurance]
       use_case.affects_legal_or_significant_effects: true
@@ -452,6 +456,7 @@ cases:
       data.special_category_data: [biometric]
       data.data_subjects: [employees]
       ai_system.autonomy_level: decides
+      use_case.acts_on_the_world: [none]
       ai_system.human_oversight: true
       use_case.remote_biometric_id_public_spaces: false
       use_case.emotion_recognition: false
@@ -606,6 +611,7 @@ cases:
       project.lifecycle_stage: production
       use_case.domains: [hr_employment]
       ai_system.autonomy_level: decides
+      use_case.acts_on_the_world: [none]
       ai_system.human_oversight: false
       data.processes_personal_data: true
       data.data_subjects: [employees]

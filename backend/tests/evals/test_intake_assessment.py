@@ -77,6 +77,10 @@ def test_validate_case_reports_tier_disagreement_and_unknown_fields() -> None:
         ("data.data_subjects", ["employees"], ["minors"], "riskier"),
         ("project.name", "a", "b", "different"),
         ("use_case.domains", ["other"], ["other"], "same"),
+        ("use_case.domains", ["other"], ["financial_markets"], "riskier"),
+        ("use_case.acts_on_the_world", ["none"], ["financial_transactions"], "riskier"),
+        ("use_case.acts_on_the_world", ["financial_transactions"], ["none"], "safer"),
+        ("use_case.financial_exposure", "under_10k", "over_1m", "riskier"),
     ],
 )
 def test_direction(field: str, expected: object, predicted: object, where: str) -> None:

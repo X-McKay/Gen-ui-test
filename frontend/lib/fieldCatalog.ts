@@ -367,6 +367,7 @@ export const FIELD_SPECS: readonly FieldSpec[] = [
       ["critical_infrastructure", "Critical infrastructure"],
       ["medical_or_safety_component", "Medical or safety component"],
       ["essential_services", "Essential services"],
+      ["financial_markets", "Trading in financial instruments"],
       ["other", "None of these"],
     ),
     isGate: true,
@@ -459,6 +460,33 @@ export const FIELD_SPECS: readonly FieldSpec[] = [
     required: false,
     whyAsked: "Untargeted facial scraping is a prohibited practice.",
   }),
+  spec({
+    field: "use_case.acts_on_the_world",
+    section: "use_case",
+    label: "Acts on the world",
+    prompt: "Does it carry out actions itself, such as payments, trades, orders or commands?",
+    control: "multi",
+    options: opts(
+      ["financial_transactions", "Financial transactions"],
+      ["physical_or_system_actions", "Physical or system actions"],
+      ["legal_commitments", "Legal commitments"],
+      ["none", "None of these"],
+    ),
+    whyAsked: "Money, equipment and commitments carry financial and operational risk.",
+  }),
+  spec({
+    field: "use_case.financial_exposure",
+    section: "use_case",
+    label: "Financial exposure",
+    prompt: "What is the largest loss one error or incident could plausibly cause?",
+    control: "choice",
+    options: opts(
+      ["under_10k", "Under 10 thousand"],
+      ["ten_k_to_1m", "10 thousand to 1 million"],
+      ["over_1m", "Over 1 million"],
+    ),
+    whyAsked: "The size of a possible loss sets the financial risk.",
+  }),
   // --- Controls -------------------------------------------------------------------------
   // Must be confirmed: only confirmed controls lower the residual risk.
   spec({
@@ -476,6 +504,7 @@ export const FIELD_SPECS: readonly FieldSpec[] = [
       ["vendor_data_protections", "Vendor data protections"],
       ["incident_response", "Incident response"],
       ["user_disclosure", "User disclosure"],
+      ["hard_limits", "Hard limits"],
       ["none", "None of these yet"],
     ),
     mustConfirm: true,
@@ -593,6 +622,8 @@ export const FRAMEWORK_LABELS: Readonly<Record<string, string>> = {
   gdpr: "GDPR",
   nist_ai_rmf: "NIST AI RMF",
   iso_42001: "ISO/IEC 42001",
+  mifid_ii: "MiFID II algorithmic trading",
+  dora: "DORA",
   internal_policy: "Internal policy",
 };
 

@@ -65,24 +65,40 @@ The EU AI Act classification says what the law requires. Two more tables in
 `app/governance/risk_profile.py` say how risky the use case is and how much of that risk the
 owner has already dealt with:
 
-- **Inherent risk** scores the use case as described, in four categories: exposure (who meets
+- **Inherent risk** scores the use case as described, in five categories: exposure (who meets
   the system: public, external, conversational, generative, third-party model), autonomy
   (acts alone, nobody can override), data (personal, special-category, biometric, minors,
-  training, transfers) and impact (significant effects, Annex III area, emotion inference).
-  Bands: 0–3 low, 4–7 medium, 8–13 high, 14+ critical, with a floor from the legal
-  classification. An externally facing chatbot lands in **high**.
+  training, transfers), impact (significant effects, Annex III area, emotion inference, and
+  what the system executes itself: `use_case.acts_on_the_world`, financial transactions,
+  equipment or system actions, legal commitments) and magnitude (`use_case.financial_exposure`,
+  what one incident could cost: over a million is 5 points, up to a million 2). Bands: 0–3
+  low, 4–7 medium, 8–13 high, 14+ critical, with a floor from the legal classification. An
+  externally facing chatbot lands in **high**; so does an algorithmic trading strategy that
+  places orders itself with millions at stake, although it touches no personal data.
 - **Residual risk** removes points per control the owner has **confirmed** (`controls.in_place`:
   guardrails, access controls, personal-data minimisation, abuse monitoring, evaluation and
-  red-teaming, vendor data protections, incident response, user disclosure; plus human
-  oversight), capped per category, and keeps a legal floor: a prohibited practice stays
+  red-teaming, vendor data protections, incident response, user disclosure, hard limits; plus
+  human oversight), capped per category, and keeps a legal floor: a prohibited practice stays
   critical and an Annex III system stays at least medium. The same chatbot with confirmed
-  guardrails, disclosure, monitoring and redaction is **low**.
+  guardrails, disclosure, monitoring and redaction is **low**. Oversight and testing lower the
+  likelihood of an incident, not its size, so only a confirmed hard limit (position, loss,
+  spend or order caps) lowers the magnitude category: the trading desk with a kill switch and
+  position limits confirmed is **medium**, not low.
 
 - **Six enterprise lenses** reuse the same drivers and controls, each tagged with the lenses
   it counts towards: data and privacy, information security, operational, financial,
   reputational and regulatory. Every lens gets its own inherent and residual tier, so a
   public chatbot with no personal data reads high on information security and reputational
   risk and low on data privacy, and the legal floor applies to the regulatory lens only.
+
+The two action facts are asked only where they can matter: `acts_on_the_world` once the
+system recommends or decides, `financial_exposure` once it executes financial transactions.
+Trading in financial instruments is its own domain value (`financial_markets`), not an
+Annex III area; when the system determines orders itself the `MiFID II algorithmic trading`
+framework module adds the Art. 17 and RTS 6 obligations (pre-trade limits, kill functionality,
+testing, real-time monitoring and five-year records, notification of the competent authority,
+annual self-assessment), brings DORA into scope and floors the overall tier at high. A model
+that only ranks stocks for a trader to execute gets none of this.
 
 Both profiles list their drivers and every control with its status (confirmed, claimed but
 not confirmed, not in place, not answered) on the review page and in the PDF. A control the

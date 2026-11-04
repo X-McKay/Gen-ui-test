@@ -937,6 +937,16 @@ DOMAIN_KEYWORDS: tuple[tuple[str, re.Pattern[str]], ...] = (
             re.I,
         ),
     ),
+    (
+        "financial_markets",
+        re.compile(
+            r"\balgorithmic trading\b|\bmarket[- ]making\b|\border book\b"
+            r"|\btrading (?:desk|venue|strategy|strategies)\b"
+            r"|\b(?:equity|equities|securities|derivatives?|futures|fx)"
+            r" (?:trading|orders?|venues?)\b",
+            re.I,
+        ),
+    ),
 )  # fmt: skip
 
 _CHAT_LIBRARIES: frozenset[str] = frozenset(

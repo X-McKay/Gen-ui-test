@@ -29,9 +29,11 @@ from app.intake.record_service import coerce_value
 from app.intake.schema import (
     ControlKind,
     DataSubject,
+    Domain,
     IntakeRecord,
     RiskTier,
     SpecialCategory,
+    WorldAction,
     new_record,
 )
 from evals.intake_assessment.cases import AssessmentCase, record_from_values
@@ -76,12 +78,17 @@ SENSITIVE_PRACTICES: frozenset[str] = frozenset(
 RISK_RANKS: dict[str, tuple[str, ...]] = {
     "project.target_users": ("internal", "external", "public"),
     "ai_system.autonomy_level": ("assistive", "recommends", "decides"),
+    "use_case.financial_exposure": ("under_10k", "ten_k_to_1m", "over_1m"),
 }
 # Lists where some members raise the risk.
 RISK_LIST_MEMBERS: dict[str, frozenset[str]] = {
     "data.special_category_data": frozenset(c.value for c in SpecialCategory),
     "data.data_subjects": frozenset({DataSubject.MINORS.value}),
-    "use_case.domains": frozenset(d.value for d in ANNEX_III_DOMAINS),
+    "use_case.domains": frozenset(d.value for d in ANNEX_III_DOMAINS)
+    | {Domain.FINANCIAL_MARKETS.value},
+    "use_case.acts_on_the_world": frozenset(
+        a.value for a in WorldAction if a is not WorldAction.NONE
+    ),
 }
 
 # ``unlisted``: a confident risk-raising value on a field the case neither expects nor lists as

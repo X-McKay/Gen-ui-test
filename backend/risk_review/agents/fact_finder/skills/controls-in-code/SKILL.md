@@ -1,6 +1,6 @@
 ---
 name: controls-in-code
-description: Fact lane - which controls are actually wired into the system (guardrails on model inputs and outputs, access controls, personal-data minimisation before the model, rate limits and abuse monitoring, evaluation and red-teaming, vendor data protections, incident response, user disclosure) and whether a person reviews outputs.
+description: Fact lane - which controls are actually wired into the system (guardrails on model inputs and outputs, access controls, personal-data minimisation before the model, rate limits and abuse monitoring, evaluation and red-teaming, vendor data protections, incident response, user disclosure, hard limits on actions) and whether a person reviews outputs.
 metadata:
   owner: platform
   version: 1.0.0
@@ -15,8 +15,9 @@ metadata:
 
 - `controls.in_place`: a list of the controls shown to be in place: `guardrails`,
   `access_controls`, `pii_minimisation`, `abuse_monitoring`, `pre_release_evaluation`,
-  `vendor_data_protections`, `incident_response`, `user_disclosure`; `none` only when
-  the searches below all come back empty (basis `absence`, confidence 0.6).
+  `vendor_data_protections`, `incident_response`, `user_disclosure`, `hard_limits`;
+  `none` only when the searches below all come back empty (basis `absence`,
+  confidence 0.6).
 - `ai_system.human_oversight`: true when a person reviews or can override outputs on the
   path that matters (an approval step, a review queue, a draft the user edits).
 
@@ -38,6 +39,11 @@ metadata:
   docs, runbooks, on-call and incident process documents.
 - user_disclosure: UI copy or API responses telling people the content is AI-generated or
   that they are talking to an assistant; a transparency notice in docs.
+- hard_limits: a cap enforced in code before an action is sent (maximum order or refund
+  amount, position or loss limits, order-rate limits, an approval threshold above which
+  the action is not taken), configured values such as `MAX_ORDER_EUR`, `max_position`,
+  `daily_loss_limit`, a circuit breaker on the action path. A limit on model tokens or
+  API rate is not a hard limit on actions.
 
 ## Traps
 

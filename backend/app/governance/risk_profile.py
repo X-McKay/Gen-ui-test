@@ -1,7 +1,8 @@
 """Inherent and residual risk, overall and per enterprise lens.
 
 *Inherent* risk scores the use case as described: who is exposed, how autonomous the system
-is, what data it touches and what its outputs can do to people. *Residual* risk is what is
+is, what data it touches, what its outputs and actions can do to people and to the world, and
+what one incident can cost. *Residual* risk is what is
 left after the controls the owner has **confirmed**; a control the model merely inferred from
 the description never lowers the score, so an optimistic write-up cannot talk the risk down.
 
@@ -27,6 +28,7 @@ from app.intake.schema import (
     DataSubject,
     Domain,
     EuAiActClassification,
+    FinancialExposure,
     IntakeRecord,
     ModelSource,
     RiskDriver,
@@ -34,13 +36,17 @@ from app.intake.schema import (
     RiskProfile,
     RiskTier,
     TargetUsers,
+    WorldAction,
 )
 
 EXPOSURE = "exposure"
 AUTONOMY = "autonomy"
 DATA = "data"
 IMPACT = "impact"
-CATEGORIES: tuple[str, ...] = (EXPOSURE, AUTONOMY, DATA, IMPACT)
+# What one incident can cost. Oversight and testing lower the likelihood of an incident, not
+# its size, so only a hard limit on the action mitigates this category.
+MAGNITUDE = "magnitude"
+CATEGORIES: tuple[str, ...] = (EXPOSURE, AUTONOMY, DATA, IMPACT, MAGNITUDE)
 
 PRIVACY = "data_privacy"
 SECURITY = "information_security"
@@ -133,6 +139,10 @@ def _contains(path: str, member: object) -> Callable[[IntakeRecord], bool]:
 
 def _annex_iii(record: IntakeRecord) -> bool:
     return any(domain in ANNEX_III_DOMAINS for domain in list_value(record, "use_case.domains"))
+
+
+ACTS_ON_THE_WORLD = "use_case.acts_on_the_world"
+FINANCIAL_EXPOSURE = "use_case.financial_exposure"
 
 
 # The point table. Unknown and missing answers add nothing; they are open questions. Rows
@@ -282,6 +292,50 @@ DRIVERS: tuple[Driver, ...] = (
         (REGULATORY, REPUTATIONAL),
         _true("use_case.emotion_recognition"),
     ),
+    # What the system does to the world by itself: the action is irreversible once taken, on
+    # top of the autonomy points for deciding without review.
+    Driver(
+        ACTS_ON_THE_WORLD,
+        IMPACT,
+        2,
+        "It executes financial transactions itself",
+        (FINANCIAL, OPERATIONAL, REGULATORY),
+        _contains(ACTS_ON_THE_WORLD, WorldAction.FINANCIAL_TRANSACTIONS),
+    ),
+    Driver(
+        ACTS_ON_THE_WORLD,
+        IMPACT,
+        2,
+        "It acts on equipment or systems itself",
+        (OPERATIONAL, SECURITY),
+        _contains(ACTS_ON_THE_WORLD, WorldAction.PHYSICAL_OR_SYSTEM_ACTIONS),
+    ),
+    Driver(
+        ACTS_ON_THE_WORLD,
+        IMPACT,
+        2,
+        "It enters commitments on the organisation's behalf",
+        (FINANCIAL, REGULATORY),
+        _contains(ACTS_ON_THE_WORLD, WorldAction.LEGAL_COMMITMENTS),
+    ),
+    # Magnitude: what one incident can cost. Over a million on its own is a medium; with an
+    # autonomous system executing the transactions it is high.
+    Driver(
+        FINANCIAL_EXPOSURE,
+        MAGNITUDE,
+        5,
+        "One incident could cost over a million",
+        (FINANCIAL, REPUTATIONAL),
+        _is(FINANCIAL_EXPOSURE, FinancialExposure.OVER_1M),
+    ),
+    Driver(
+        FINANCIAL_EXPOSURE,
+        MAGNITUDE,
+        2,
+        "One incident could cost up to a million",
+        (FINANCIAL,),
+        _is(FINANCIAL_EXPOSURE, FinancialExposure.TEN_K_TO_1M),
+    ),
 )
 
 
@@ -387,6 +441,13 @@ MITIGATIONS: tuple[Mitigation, ...] = (
         1,
         "Users are told they interact with AI",
         (REPUTATIONAL, REGULATORY),
+    ),
+    _control(
+        ControlKind.HARD_LIMITS,
+        MAGNITUDE,
+        2,
+        "Position, loss, spend or action caps bound what one incident can cost",
+        (FINANCIAL, OPERATIONAL),
     ),
 )
 

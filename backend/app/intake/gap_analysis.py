@@ -80,6 +80,8 @@ def gate_open(record: IntakeRecord, spec: QuestionSpec) -> bool:
     gate_field = record.get_field(spec.gate.field)
     if gate_field.value is None or gate_field.value == UNKNOWN:
         return False
+    if isinstance(gate_field.value, list):
+        return any(item in spec.gate.values for item in gate_field.value)
     return gate_field.value in spec.gate.values
 
 
