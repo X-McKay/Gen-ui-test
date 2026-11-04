@@ -286,10 +286,11 @@ cases:
       use_case.generates_synthetic_content: false
       use_case.social_scoring: false
       use_case.emotion_recognition: false
-    absent: [controls.in_place, project.lifecycle_stage]
+      controls.in_place: [hard_limits]
+    absent: [project.lifecycle_stage]
     inherent: high
     residual: high
-    note: Public auto-decisions on loans; officer review alone keeps the residual high.
+    note: Public auto-decisions on loans; the 5,000-euro threshold above which an officer decides is a hard limit, and with officer review it still leaves the residual high.
 
   # --- No AI at all -------------------------------------------------------------------------
   - id: noai-rules-engine
