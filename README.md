@@ -217,6 +217,18 @@ live endpoint nightly at 03:00 UTC and on demand, reading the key from the
   components, and the runtime validates every operation server-side.
 - Containers run as non-root users.
 
+## Agent-based risk review
+
+`make risk-review` runs two Google ADK agents on the same local model as the app: a
+**lane reviewer** that traces one risk lane (model output to state, logging and redaction,
+repository analysis, API and persistence, export rendering, frontend trust) from sources to
+sinks with read-only tools, and a **finding verifier** that tries to disprove each finding.
+Findings must cite lines that exist; the reporting tool checks every quote against the file.
+Reports, with token, request and latency counts per lane, land in `reports/risk-review/`.
+`make eval-risk-review` scores the reviewer on a planted-defect fixture for recall, precision,
+decoy false positives, grounding, latency and tokens against `backend/evals/risk_review/baselines/`.
+Layout and conventions: `backend/risk_review/README.md`; Claude skill: `/risk-review`.
+
 ## How-to: add a question (≈20 minutes)
 
 Example: ask whether the system is also deployed outside the EU, as a yes/no question in the

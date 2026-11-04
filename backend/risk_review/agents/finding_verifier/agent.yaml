@@ -1,0 +1,37 @@
+name: finding-verifier
+description: >
+  Try to disprove one finding from a lane review by reading the code paths it names and
+  checking whether an existing test already covers the claimed gap.
+
+instructions: instructions/system.md
+
+model_settings:
+  temperature: 0.0
+  max_tokens: 3000
+  enable_thinking: false
+
+retries: 1
+tool_timeout: 180
+
+metadata:
+  contract_version: 1
+  owner: platform
+  version: 1.0.0
+  execution_class: ephemeral
+  governance_tier: low
+  risk_assessment: docs/risk-assessments/risk-review.yaml
+  data_classification: internal
+  model_policy: balanced-v1
+  enabled_skills:
+    - evidence-standards
+    - disprove-finding
+  enabled_toolsets:
+    - repo-read
+    - backend-tests
+    - record-verdict
+  budgets:
+    max_requests: 18
+    max_input_tokens: 500000    # cumulative over the run
+    max_output_tokens: 12000
+    max_tool_calls: 14
+    max_cost_usd: 0

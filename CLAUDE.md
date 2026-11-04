@@ -14,6 +14,7 @@ Read this first; it is the contract the tests enforce. Details live in `README.m
 | `backend/app/repo_analysis/` | Clone (allowlisted, shallow, capped), inventory, signal detectors, summariser |
 | `backend/app/export/` | JSON export, WeasyPrint PDF, webhook |
 | `backend/fixtures/repos/` | The two fixture repositories served outside production |
+| `backend/risk_review/` | Agent-based risk review (ADK, local model): agents with spec/skills/tools, workflow, evals in `backend/evals/` |
 | `frontend/generative-ui/` | The A2UI catalog (≤ 8 components) and the step form state |
 | `frontend/components/` | Review page, landing, repo form, theme, shadcn `ui/` |
 | `frontend/lib/` | `fieldCatalog.ts` (field specs, labels, controls), API client, generated `intakeTypes.ts` |
@@ -29,6 +30,8 @@ make lint typecheck test        # what CI runs (ruff, mypy --strict, eslint, pre
 make check-schema               # schema + generated TS types are fresh
 make e2e                        # Playwright, mock model, four browser projects
 make e2e-live                   # Playwright against the live endpoint
+make risk-review                # agent-based risk review on the live model (reports/risk-review/)
+make eval-risk-review           # risk-review evals: accuracy, latency, tokens vs baseline
 ```
 
 Use the Makefile targets rather than ad-hoc commands; they are what CI runs. Run `make
@@ -78,4 +81,4 @@ change under `frontend/generative-ui/`, `frontend/components/intake/` or `backen
 
 ## Skills
 
-`/add-question`, `/add-framework`, `/verify`, `/e2e-debug` in `.claude/skills/`.
+`/add-question`, `/add-framework`, `/verify`, `/e2e-debug`, `/risk-review` in `.claude/skills/`.

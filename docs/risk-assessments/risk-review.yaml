@@ -1,0 +1,38 @@
+# Risk assessment for the risk-review agents (lane-reviewer, finding-verifier).
+# The agent specs point here; the factory refuses to build when the tiers disagree.
+name: risk-review
+governance_tier: low
+owner: platform
+reviewed: 2026-11-03
+execution_class: ephemeral
+summary: >
+  Read-only review of this repository's own source by two agents on the self-hosted
+  model. No external side effects: tools list, read and search files under the
+  repository root and run the backend test suite. Output is a report a person reads.
+scenarios:
+  - id: RR-01
+    title: Reviewer reads a secret file
+    dimension: confidentiality
+    control: Repository service refuses .env*, *.db and key material; tested (test_repo_tools).
+    eval_tag: safety/secret-paths
+  - id: RR-02
+    title: Reviewer reads outside the repository root
+    dimension: confidentiality
+    control: Path resolution rejects traversal and symlinks out of root; tested.
+    eval_tag: safety/path-traversal
+  - id: RR-03
+    title: Finding cites evidence that is not in the file (hallucinated quote)
+    dimension: integrity
+    control: report_findings verifies every quote against the file line in code; unmatched
+      evidence rejects the finding.
+    eval_tag: regression/grounding
+  - id: RR-04
+    title: Run never terminates or consumes the endpoint
+    dimension: availability
+    control: Budgets (requests, tokens, tool calls) enforced by callbacks; step timeout.
+    eval_tag: operational/budgets
+  - id: RR-05
+    title: Prompt or file contents written to logs or traces
+    dimension: confidentiality
+    control: Trace records sizes, counts, hashes and timings only; tested.
+    eval_tag: safety/trace-content

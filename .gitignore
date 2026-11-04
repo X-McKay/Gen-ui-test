@@ -31,3 +31,7 @@ frontend/playwright/.cache/
 
 # Playwright MCP artefacts
 .playwright-mcp/
+
+# Risk review and eval output
+reports/
+backend/evals/risk_review/experiments/*/

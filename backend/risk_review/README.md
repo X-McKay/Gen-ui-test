@@ -1,0 +1,93 @@
+# Risk review: agent-based codebase review on the local model
+
+A developer tool, not part of the product. Two Google ADK agents on the same LiteLLM
+endpoint as the app review this repository lane by lane and verify each other's findings.
+
+```sh
+make risk-review                                   # all six lanes + verification
+make risk-review RISK_REVIEW_ARGS="--lanes logging-and-redaction --no-verify"
+make eval-risk-review EVAL_ARGS="--suite smoke --repeats 3"
+```
+
+Reports land in `reports/risk-review/` (`report.md`, `report.json`, `trace.jsonl`).
+
+## Why agents instead of grep
+
+The risks that matter here are data-flow properties: model output deciding a tier, a
+description reaching a log line through three helpers, `"unknown"` collapsing to false.
+Each **lane** gives one agent a single invariant, its sources and sinks and the paths to
+read; the agent traces flows with read-only tools and reports findings through a typed
+tool that **rejects any evidence quote that does not match the file**. A second agent then
+tries to disprove every finding. Grep-shaped checks belong in ruff, Semgrep or a test;
+confirmed findings should become one of those.
+
+## Layout (agent playbook, chapter 2)
+
+```text
+risk_review/
+├── agents/
+│   ├── lane_reviewer/         agent.yaml · factory.py · types.py · instructions/system.md
+│   │   ├── skills/<lane>/     one SKILL.md per lane (invariant, sources, sinks, procedure)
+│   │   └── tools/             report_findings (private; grounds evidence in code)
+│   └── finding_verifier/      agent.yaml · factory.py · types.py · instructions/system.md
+│       ├── skills/disprove-finding/
+│       └── tools/             record_verdict (private)
+├── skills/evidence-standards/ shared runtime skill
+├── tools/
+│   ├── common/                errors · policy (effect, retry safety) · telemetry callbacks
+│   ├── repo/                  read-only list/read/search with path policy and output caps
+│   └── testing/               bounded pytest runner (verifier only)
+├── workflows/review.py        deterministic orchestration: lanes → findings → verdicts
+├── steps/agent_step.py        the one place model and tool I/O happens
+├── runtime/                   spec loader · skills loader · model policy · manifest · assembly
+├── policy/budgets.py          request/token/tool budgets as ADK callbacks
+├── observability/             run ledger + JSONL trace (counts and sizes only) · report
+└── settings.py                RISK_REVIEW_* environment
+```
+
+An agent is a spec (`agent.yaml`), an instruction file, allowlisted skills and allowlisted
+toolsets. The factory (`runtime/assembly.py`) refuses to build when the owner, version,
+execution class, governance tier, risk assessment, model policy, budgets, a skill or a
+toolset is missing, when the tier disagrees with `docs/risk-assessments/risk-review.yaml`,
+or when a tool's effect exceeds the execution class (everything here is `read` under
+`ephemeral`). It emits a **capability manifest** whose id is on every trace line, run
+metric and eval result.
+
+## What is measured
+
+Every run records model requests, input/output/thinking tokens, tool calls by name, tool
+errors, latency and an estimated cost (price table in `RISK_REVIEW_PRICE_*`; the local
+endpoint defaults to 0). Budgets from the spec are enforced by callbacks: the run ends
+with `budget_exhausted` instead of looping.
+
+## Evals (`backend/evals/risk_review/`)
+
+```text
+evals/risk_review/
+├── fixtures/planted/      a mini backend with labelled defects (# PLANTED) and decoys (# DECOY)
+├── datasets/smoke/        one case per planted lane: expected windows, decoys, budgets
+├── datasets/safety/       secret-path case: nothing from .env may reach the result
+├── evaluators/            deterministic (schema, grounding, recall, precision, decoys, leaks),
+│                          trajectory (allowed/required tools, report calls), operational
+│                          (latency, requests, tokens, cost, p50/p95)
+├── baselines/<suite>.json thresholds + accepted numbers; `--promote` updates them
+└── experiments/<id>/      results.json · summary.md · trace.jsonl (git-ignored)
+```
+
+Hard gates (binary): schema validity 1.0, grounding 1.0, zero forbidden tool calls, zero
+leaked strings. Quality: recall, precision, decoy hit rate, pass rate, and regression against
+the accepted baseline. Operational: p95 latency, p95 tokens, p95 model requests. Use
+`--repeats 3` or more for any change to instructions, skills, model settings or tool
+descriptions; one run says little about a stochastic reviewer. There is no LLM judge yet;
+add one only for qualities the deterministic evaluators cannot express (for example
+"is the proposed test actually the right test").
+
+## Adding a lane
+
+1. `agents/lane_reviewer/skills/<lane>/SKILL.md` with frontmatter (`owner`, `version`,
+   `governance_tier`) and the sections the tests require. Name real paths; a test fails
+   when a named path disappears.
+2. Add the name to `enabled_skills` in `agents/lane_reviewer/agent.yaml`.
+3. Plant at least one defect and one decoy in `evals/risk_review/fixtures/planted/` and add
+   a smoke case. Run `make eval-risk-review EVAL_ARGS="--case <id> --repeats 3"`.
+4. Bump the agent `version` in the spec; behaviour changed.

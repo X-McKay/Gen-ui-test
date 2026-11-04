@@ -29,7 +29,7 @@ GOVERNANCE_COV := --cov=app/governance --cov-report=term-missing --cov-fail-unde
 
 .PHONY: help setup doctor install install-browsers dev dev-mock backend frontend lint format \
         typecheck test test-backend test-frontend export-schema check-schema e2e e2e-live e2e-ui \
-        build docker-up docker-down clean
+        build docker-up docker-down clean risk-review eval-risk-review
 
 help: ## Show this help (default)
 	@printf "\nAI Governance Intake — make targets\n\n"
@@ -120,8 +120,8 @@ ifneq ($(strip $(PRETTIER_CONFIG)),)
 	cd $(FRONTEND_DIR) && $(PNPM) format
 endif
 
-typecheck: ## mypy --strict on backend/app, tsc --noEmit on the frontend
-	cd $(BACKEND_DIR) && $(UV) run mypy app
+typecheck: ## mypy --strict on backend/app, risk_review and evals; tsc --noEmit on the frontend
+	cd $(BACKEND_DIR) && $(UV) run mypy app risk_review evals
 	cd $(FRONTEND_DIR) && $(PNPM) typecheck
 
 test: test-backend test-frontend ## Backend tests (governance 100 % gate) + frontend unit tests
@@ -153,6 +153,17 @@ e2e-live: ## Playwright suite against the live model endpoint (E2E_LIVE=1)
 
 e2e-ui: ## Playwright UI mode
 	cd $(FRONTEND_DIR) && $(PNPM) exec playwright test --ui $(PLAYWRIGHT_ARGS)
+
+# ---- Agent-based risk review ----------------------------------------------------------------
+
+RISK_REVIEW_ARGS ?=
+EVAL_ARGS ?=
+
+risk-review: ## Agent-based risk review of this repository on the live model (reports/risk-review/)
+	cd $(BACKEND_DIR) && $(UV) run python -m risk_review $(RISK_REVIEW_ARGS)
+
+eval-risk-review: ## Run the risk-review evals (accuracy, latency, tokens) against the baseline
+	cd $(BACKEND_DIR) && $(UV) run python -m evals.risk_review run $(EVAL_ARGS)
 
 # ---- Build and containers ------------------------------------------------------------------
 

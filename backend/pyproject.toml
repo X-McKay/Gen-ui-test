@@ -36,6 +36,9 @@ dev = [
     "mypy>=1.14",
     "respx>=0.22",
     "jsonschema>=4.26.0",
+    # risk_review (developer tool) and its evals
+    "pyyaml>=6.0",
+    "types-PyYAML>=6.0",
 ]
 
 [build-system]
@@ -48,6 +51,7 @@ packages = ["app"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = ["evals/risk_review/fixtures"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF"]
@@ -58,7 +62,7 @@ python_version = "3.12"
 strict = true
 warn_unreachable = true
 plugins = ["pydantic.mypy"]
-exclude = ["tests/"]
+exclude = ["tests/", "evals/risk_review/fixtures/"]
 
 [[tool.mypy.overrides]]
 module = ["ag_ui_adk.*", "google.adk.*", "google.genai.*", "litellm.*", "git.*", "weasyprint.*", "sse_starlette.*", "boto3.*", "pythonjsonlogger.*"]
@@ -68,6 +72,7 @@ follow_untyped_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+norecursedirs = ["evals/risk_review/fixtures", ".venv"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
