@@ -122,6 +122,7 @@ Measured on the local model (`docs/risk-reviews/`):
 | --- | --- |
 | Descriptions, 27 cases x 2 runs | pass rate 0.74, field accuracy 0.88, control false positives 0, silent missed risks 0, inherent and residual tier exact 0.89; risk false positives in 19 % of runs, almost all an Annex III domain assigned on a borderline description; p50 21 s per extraction |
 | Repository, `hr_screening` fixture | 37 grounded facts, EU high-risk, inherent high, residual medium if the claimed controls are confirmed, 313 s, 52 requests, 418 k input tokens |
+| Repository suite, both fixtures through the agents | field accuracy 0.89 (hr_screening 0.95 with both tiers exact and no false positive; log_search 0.81 with autonomy rated one step too high, which tipped a low to medium), control false positives 0, 260–290 s and 0.5–0.7 M input tokens per repository |
 
 Evidence grounding in code did most of the work: a risk-raising value whose evidence quote is
 not in the description is capped at low confidence (so the owner is asked) or dropped
